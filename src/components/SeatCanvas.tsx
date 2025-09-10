@@ -2,6 +2,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useSeatMapStore } from "@/hooks/useSeatMapStore";
 import { usePanZoom } from "@/hooks/usePanZoom";
+import { AddBlockModal } from "@/components/AddBlockModal";
 import type { Seat } from "@/types/seatmap";
 
 function SeatRect({ seat, selected }: { seat: Seat; selected: boolean }) {
@@ -36,6 +37,17 @@ export function SeatCanvas() {
 	const { zoom, offsetX, offsetY, onWheel, setOffset, screenToWorld } =
 		usePanZoom();
 	const [bounds, setBounds] = useState<DOMRect | null>(null);
+	const canvasCursor =
+		state.activeTool.kind === "pan"
+			? "cursor-grab"
+			: state.activeTool.kind === "addBlock"
+			? "cursor-copy"
+			: "cursor-default";
+	const [pendingAddAt, setPendingAddAt] = useState<{
+		x: number;
+		y: number;
+	} | null>(null);
+	const [showAddModal, setShowAddModal] = useState(false);
 
 	useEffect(() => {
 		const el = wrapperRef.current;
@@ -99,7 +111,8 @@ export function SeatCanvas() {
 
 		if (state.activeTool.kind === "addBlock") {
 			const { x, y } = screenToWorld(e.clientX, e.clientY, bounds);
-			addBlockAt(x, y, state.activeTool.preset);
+			setPendingAddAt({ x, y });
+			setShowAddModal(true);
 		}
 	}
 
@@ -140,7 +153,7 @@ export function SeatCanvas() {
 		>
 			<svg
 				ref={svgRef}
-				className="w-full h-full cursor-[inherit]"
+				className={`w-full h-full cursor-[inherit] ${canvasCursor}`}
 				onMouseDown={onMouseDown}
 				onMouseMove={onMouseMove}
 				onMouseUp={onMouseUp}
@@ -192,6 +205,25 @@ export function SeatCanvas() {
 				{Math.round(zoom * 100)}% · {Math.round(offsetX)},{" "}
 				{Math.round(offsetY)}
 			</div>
+
+			<AddBlockModal
+				open={showAddModal}
+				onClose={() => setShowAddModal(false)}
+				onConfirm={(cfg) => {
+					setShowAddModal(false);
+					if (pendingAddAt) {
+						const basePreset =
+							state.activeTool.kind === "addBlock"
+								? state.activeTool.preset
+								: {};
+						addBlockAt(pendingAddAt.x, pendingAddAt.y, {
+							...basePreset,
+							...cfg,
+						});
+						setPendingAddAt(null);
+					}
+				}}
+			/>
 		</div>
 	);
 }

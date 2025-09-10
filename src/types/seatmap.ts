@@ -35,6 +35,7 @@ export type SeatBlock = {
 	vGap: number;
 	rowLabel: string; // e.g., A, B, C or 1,2,3
 	rowLabelStyle: "alpha" | "numeric";
+	seatLabelStyle?: "alpha" | "numeric"; // how to label seats within a row (columns)
 	startRowIndex: number; // 0-based
 	startColIndex: number; // 0-based
 };
@@ -66,6 +67,7 @@ export type Tool =
 				| "hGap"
 				| "vGap"
 				| "rowLabelStyle"
+				| "seatLabelStyle"
 				| "startRowIndex"
 				| "startColIndex"
 			> & { name?: string };

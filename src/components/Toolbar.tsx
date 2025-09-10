@@ -51,6 +51,7 @@ export function Toolbar() {
 							hGap: 8,
 							vGap: 8,
 							rowLabelStyle: "alpha",
+							seatLabelStyle: "numeric",
 							startRowIndex: 0,
 							startColIndex: 0,
 							name: "Block",

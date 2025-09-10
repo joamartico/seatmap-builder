@@ -172,7 +172,11 @@ function buildSeatsForBlock(block: SeatBlock): Seat[] {
 				block.rowLabelStyle === "alpha"
 					? alphaLabel(rowIndex)
 					: String(rowIndex + 1);
-			const label = `${rowLabel}${colIndex + 1}`;
+			const colLabel =
+				block.seatLabelStyle === "alpha"
+					? alphaLabel(colIndex)
+					: String(colIndex + 1);
+			const label = `${rowLabel}${colLabel}`;
 			seats.push({
 				id,
 				x,
@@ -260,6 +264,7 @@ export function SeatMapProvider({ children }: { children: React.ReactNode }) {
 				vGap: preset.vGap ?? 8,
 				rowLabel: "",
 				rowLabelStyle: preset.rowLabelStyle ?? "alpha",
+				seatLabelStyle: preset.seatLabelStyle ?? "numeric",
 				startRowIndex: preset.startRowIndex ?? 0,
 				startColIndex: preset.startColIndex ?? 0,
 			};
