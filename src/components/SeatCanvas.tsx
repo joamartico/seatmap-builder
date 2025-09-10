@@ -6,21 +6,47 @@ import { AddBlockModal } from "@/components/AddBlockModal";
 import type { Seat } from "@/types/seatmap";
 
 function SeatRect({ seat, selected }: { seat: Seat; selected: boolean }) {
+	const fontSize = Math.max(10, Math.floor(seat.height * 0.45));
+	const textColor = selected ? "#1e3a8a" : "#374151"; // blue-800 or gray-700
 	return (
-		<rect
-			x={seat.x}
-			y={seat.y}
-			width={seat.width}
-			height={seat.height}
-			rx={4}
-			ry={4}
-			className={`stroke-1 ${
-				selected
-					? "stroke-blue-500 fill-blue-100"
-					: "stroke-gray-400 fill-white"
-			}`}
-		/>
+		<g>
+			<rect
+				x={seat.x}
+				y={seat.y}
+				width={seat.width}
+				height={seat.height}
+				rx={4}
+				ry={4}
+				className={`stroke-1 ${
+					selected
+						? "stroke-blue-500 fill-blue-100"
+						: "stroke-gray-400 fill-white"
+				}`}
+			/>
+			<text
+				x={seat.x + seat.width / 2}
+				y={seat.y + seat.height / 2}
+				textAnchor="middle"
+				alignmentBaseline="middle"
+				fontSize={fontSize}
+				fill={textColor}
+				pointerEvents="none"
+			>
+				{seat.label}
+			</text>
+		</g>
 	);
+}
+
+function alphaLabel(n: number) {
+	// 0 -> A, 25 -> Z, 26 -> AA, ...
+	let s = "";
+	n = Math.floor(n);
+	while (n >= 0) {
+		s = String.fromCharCode((n % 26) + 65) + s;
+		n = Math.floor(n / 26) - 1;
+	}
+	return s;
 }
 
 export function SeatCanvas() {
@@ -187,6 +213,54 @@ export function SeatCanvas() {
 						fill={state.seatMap.backgroundColor}
 						stroke="#ddd"
 					/>
+
+					{/* row labels per block */}
+					{state.seatMap.blocks.map((b) => {
+						const labels: {
+							x: number;
+							y: number;
+							text: string;
+							key: string;
+						}[] = [];
+						for (let r = 0; r < b.rows; r++) {
+							const rowIndex = b.startRowIndex + r;
+							const rowText =
+								b.rowLabelStyle === "alpha"
+									? alphaLabel(rowIndex)
+									: String(rowIndex + 1);
+							const y =
+								b.originY +
+								r * (b.seatHeight + b.vGap) +
+								b.seatHeight / 2;
+							const x = b.originX - Math.max(8, b.hGap) - 8; // left padding before first seat
+							labels.push({
+								x,
+								y,
+								text: rowText,
+								key: `${b.id}-rowlbl-${rowIndex}`,
+							});
+						}
+						return (
+							<g key={`rowlabels-${b.id}`}>
+								{labels.map((L) => (
+									<text
+										key={L.key}
+										x={L.x}
+										y={L.y}
+										textAnchor="end"
+										alignmentBaseline="middle"
+										fontSize={Math.max(
+											11,
+											Math.floor(b.seatHeight * 0.5)
+										)}
+										fill="#6b7280" // gray-500
+									>
+										{L.text}
+									</text>
+								))}
+							</g>
+						);
+					})}
 
 					{/* seats */}
 					{state.seatMap.seats.map((s) => (
