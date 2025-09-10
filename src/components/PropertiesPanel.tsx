@@ -14,7 +14,7 @@ export function PropertiesPanel() {
 	if (!selected && !selectedBlock) {
 		return (
 			<div className="p-3 text-sm text-gray-500">
-				No selection. Select a seat or block.
+				No selection. Select a seat or section.
 			</div>
 		);
 	}
@@ -43,7 +43,7 @@ export function PropertiesPanel() {
 
 			{selectedBlock && (
 				<div className="space-y-2">
-					<div className="font-semibold">Block</div>
+					<div className="font-semibold">Section</div>
 					<div className="grid grid-cols-2 gap-2 items-center text-sm">
 						<label>Name</label>
 						<input

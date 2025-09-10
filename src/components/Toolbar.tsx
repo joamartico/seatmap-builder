@@ -39,7 +39,7 @@ export function Toolbar() {
 						? "bg-gray-900 text-white"
 						: "bg-white"
 				}`}
-				title="Add Block"
+				title="Add Section"
 				onClick={() =>
 					setTool({
 						kind: "addBlock",
@@ -54,7 +54,7 @@ export function Toolbar() {
 							seatLabelStyle: "numeric",
 							startRowIndex: 0,
 							startColIndex: 0,
-							name: "Block",
+							name: "Section",
 						},
 					})
 				}

@@ -80,7 +80,15 @@ function reducer(state: SeatMapState, action: Action): SeatMapState {
 				),
 				updatedAt: now(),
 			};
-			return withHistory(state, next);
+			const stillSelected =
+				state.selectedBlockId &&
+				state.selectedBlockId === action.blockId
+					? undefined
+					: state.selectedBlockId;
+			return {
+				...withHistory(state, next),
+				selectedBlockId: stillSelected,
+			};
 		}
 		case "ADD_SEATS": {
 			const next: SeatMap = {

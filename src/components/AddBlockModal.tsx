@@ -38,7 +38,7 @@ export function AddBlockModal({ open, onClose, onConfirm }: Props) {
 	return (
 		<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
 			<div className="bg-white rounded shadow-lg w-[92vw] max-w-md p-4">
-				<div className="text-base font-semibold mb-3">Add Block</div>
+				<div className="text-base font-semibold mb-3">Add Section</div>
 				<div className="grid grid-cols-2 gap-3 items-center text-sm">
 					<label>Rows</label>
 					<input

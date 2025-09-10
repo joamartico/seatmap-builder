@@ -3,6 +3,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useSeatMapStore } from "@/hooks/useSeatMapStore";
 import { usePanZoom } from "@/hooks/usePanZoom";
 import { AddBlockModal } from "@/components/AddBlockModal";
+import { ConfirmModal } from "@/components/ConfirmModal";
 import type { Seat } from "@/types/seatmap";
 
 function SeatRect({ seat, selected }: { seat: Seat; selected: boolean }) {
@@ -74,6 +75,9 @@ export function SeatCanvas() {
 		y: number;
 	} | null>(null);
 	const [showAddModal, setShowAddModal] = useState(false);
+	const [editingName, setEditingName] = useState(false);
+	const [nameDraft, setNameDraft] = useState("");
+	const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
 	useEffect(() => {
 		const el = wrapperRef.current;
@@ -139,7 +143,12 @@ export function SeatCanvas() {
 			const { x, y } = screenToWorld(e.clientX, e.clientY, bounds);
 			setPendingAddAt({ x, y });
 			setShowAddModal(true);
+			return;
 		}
+
+		// Clicked on empty canvas: clear seat and section selection
+		dispatch({ type: "SELECT_SEATS", ids: [] });
+		dispatch({ type: "SELECT_BLOCK", id: undefined });
 	}
 
 	function onMouseMove(e: React.MouseEvent) {
@@ -170,6 +179,9 @@ export function SeatCanvas() {
 			set.add(seat.id);
 		}
 		dispatch({ type: "SELECT_SEATS", ids: Array.from(set) });
+		// Also select the section (block) this seat belongs to
+		const blockId = seat.id.split("::")[0] || undefined;
+		dispatch({ type: "SELECT_BLOCK", id: blockId });
 	}
 
 	return (
@@ -214,7 +226,7 @@ export function SeatCanvas() {
 						stroke="#ddd"
 					/>
 
-					{/* row labels per block */}
+					{/* row labels per section */}
 					{state.seatMap.blocks.map((b) => {
 						const labels: {
 							x: number;
@@ -271,6 +283,44 @@ export function SeatCanvas() {
 							/>
 						</g>
 					))}
+
+					{/* selected section overlay */}
+					{state.selectedBlockId &&
+						(() => {
+							const b = state.seatMap.blocks.find(
+								(x) => x.id === state.selectedBlockId
+							);
+							if (!b) return null;
+							const bw =
+								b.cols * b.seatWidth + (b.cols - 1) * b.hGap;
+							const bh =
+								b.rows * b.seatHeight + (b.rows - 1) * b.vGap;
+							return (
+								<g key={`sel-${b.id}`}>
+									{/* subtle highlight */}
+									<rect
+										x={b.originX - 4}
+										y={b.originY - 4}
+										width={bw + 8}
+										height={bh + 8}
+										fill="#3b82f6"
+										fillOpacity={0.06}
+										pointerEvents="none"
+									/>
+									<rect
+										x={b.originX - 6}
+										y={b.originY - 6}
+										width={bw + 12}
+										height={bh + 12}
+										fill="none"
+										stroke="#3b82f6" /* blue-500 */
+										strokeWidth={2}
+										strokeDasharray="6 4"
+										shapeRendering="crispEdges"
+									/>
+								</g>
+							);
+						})()}
 				</g>
 			</svg>
 
@@ -279,6 +329,89 @@ export function SeatCanvas() {
 				{Math.round(zoom * 100)}% · {Math.round(offsetX)},{" "}
 				{Math.round(offsetY)}
 			</div>
+
+			{/* Selected section toolbar (HTML overlay) */}
+			{state.selectedBlockId &&
+				bounds &&
+				(() => {
+					const b = state.seatMap.blocks.find(
+						(x) => x.id === state.selectedBlockId
+					);
+					if (!b) return null;
+					const bw = b.cols * b.seatWidth + (b.cols - 1) * b.hGap;
+					const sx = offsetX + b.originX * zoom;
+					const sy = offsetY + b.originY * zoom;
+					const top = Math.max(8, sy - 36);
+					const left = Math.max(8, sx);
+					const width = Math.max(
+						140,
+						Math.min(bounds.width - left - 8, bw * zoom)
+					);
+					const label = b.name || "Untitled section";
+					return (
+						<div
+							className="absolute z-10 pointer-events-auto"
+							style={{ top, left, width }}
+						>
+							<div className="inline-flex items-center gap-2 rounded-md border border-blue-200 bg-white/95 shadow px-2 py-1">
+								{editingName ? (
+									<form
+										onSubmit={(e) => {
+											e.preventDefault();
+											const next = nameDraft.trim();
+											if (next) {
+												dispatch({
+													type: "UPDATE_BLOCK",
+													blockId: b.id,
+													patch: { name: next },
+												});
+											}
+											setEditingName(false);
+										}}
+									>
+										<input
+											autoFocus
+											className="border rounded px-2 py-0.5 text-sm"
+											value={nameDraft}
+											onChange={(e) =>
+												setNameDraft(e.target.value)
+											}
+											onBlur={() => setEditingName(false)}
+										/>
+									</form>
+								) : (
+									<span
+										className="text-sm text-blue-900 font-medium truncate"
+										style={{ maxWidth: width - 90 }}
+									>
+										{label}
+									</span>
+								)}
+								<div className="flex items-center gap-1">
+									<button
+										title="Edit name"
+										className="px-1.5 py-0.5 text-xs rounded border hover:bg-gray-50"
+										onClick={() => {
+											setNameDraft(label);
+											setEditingName(true);
+										}}
+									>
+										✎
+									</button>
+									<button
+										title="Delete section"
+										className="px-1.5 py-0.5 text-xs rounded border text-red-600 hover:bg-red-50"
+										onClick={() =>
+											setShowDeleteConfirm(true)
+										}
+									>
+										🗑
+									</button>
+								</div>
+							</div>
+						</div>
+					);
+				})()}
 
 			<AddBlockModal
 				open={showAddModal}
@@ -298,6 +431,39 @@ export function SeatCanvas() {
 					}
 				}}
 			/>
+
+			{/* Delete confirmation */}
+			{state.selectedBlockId && (
+				<ConfirmModal
+					open={showDeleteConfirm}
+					title="Delete section"
+					message={(() => {
+						const b = state.seatMap.blocks.find(
+							(x) => x.id === state.selectedBlockId
+						);
+						return (
+							<>
+								Are you sure you want to delete{" "}
+								<span className="font-medium">
+									{b?.name || "Untitled section"}
+								</span>
+								?
+								<br />
+								This will remove the section and all its seats.
+							</>
+						);
+					})()}
+					confirmLabel="Delete"
+					cancelLabel="Cancel"
+					onConfirm={() => {
+						const id = state.selectedBlockId!;
+						dispatch({ type: "REMOVE_BLOCK", blockId: id });
+						dispatch({ type: "SELECT_BLOCK", id: undefined });
+						setShowDeleteConfirm(false);
+					}}
+					onClose={() => setShowDeleteConfirm(false)}
+				/>
+			)}
 		</div>
 	);
 }
