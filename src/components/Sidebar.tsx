@@ -11,13 +11,13 @@ export function Sidebar() {
 
 	return (
 		<div className="h-full w-full border-l border-black/10 bg-white flex flex-col">
-			<div className="p-3 border-b text-sm font-semibold">Sections</div>
+			<div className="p-3 border-b text-sm font-semibold">Secciones</div>
 			<div className="flex-1 overflow-auto">
 				{state.seatMap.blocks.length === 0 ? (
 					<div className="p-3 text-sm text-gray-500 flex items-center gap-1">
-						No sections yet. Use
+						Todavía no hay asientos. Usa
 						<LuSquarePlus className="w-4 h-4 inline-block" />
-						to add.
+						para agregar.
 					</div>
 				) : (
 					<ul>
@@ -39,7 +39,7 @@ export function Sidebar() {
 										})
 									}
 								>
-									{b.name || "Untitled section"} · {b.rows}x
+									{b.name || "Sección sin nombre"} · {b.rows}x
 									{b.cols}
 								</button>
 								<button
@@ -60,20 +60,20 @@ export function Sidebar() {
 
 			<ConfirmModal
 				open={!!pendingDeleteId}
-				title="Delete section"
+				title="Eliminar sección"
 				message={
 					<>
-						Are you sure you want to delete{" "}
+						¿Seguro que quieres eliminar{" "}
 						<span className="font-medium">
-							{pending?.name || "Untitled section"}
+							{pending?.name || "Sección sin nombre"}
 						</span>
 						?
 						<br />
-						This will remove the section and all its seats.
+						Esto eliminará la sección y todos sus asientos.
 					</>
 				}
-				confirmLabel="Delete"
-				cancelLabel="Cancel"
+				confirmLabel="Eliminar"
+				cancelLabel="Cancelar"
 				onConfirm={() => {
 					if (pendingDeleteId) {
 						dispatch({

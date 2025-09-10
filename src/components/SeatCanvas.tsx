@@ -472,7 +472,7 @@ export function SeatCanvas() {
 								)}
 								<div className="flex items-center gap-1">
 									<button
-										title="Edit name"
+										title="Editar nombre"
 										className="px-1.5 py-0.5 text-xs rounded border hover:bg-gray-50"
 										onClick={() => {
 											setNameDraft(label);
@@ -482,7 +482,7 @@ export function SeatCanvas() {
 										<LuPencil className="w-4 h-4" />
 									</button>
 									<button
-										title="Delete section"
+										title="Eliminar sección"
 										className="px-1.5 py-0.5 text-xs rounded border text-red-600 hover:bg-red-50"
 										onClick={() =>
 											setShowDeleteConfirm(true)
@@ -519,25 +519,25 @@ export function SeatCanvas() {
 			{state.selectedBlockId && (
 				<ConfirmModal
 					open={showDeleteConfirm}
-					title="Delete section"
+					title="Eliminar sección"
 					message={(() => {
 						const b = state.seatMap.blocks.find(
 							(x) => x.id === state.selectedBlockId
 						);
 						return (
 							<>
-								Are you sure you want to delete{" "}
+								¿Seguro que quieres eliminar la sección{" "}
 								<span className="font-medium">
-									{b?.name || "Untitled section"}
+									{b?.name || "Sección sin nombre"}
 								</span>
 								?
 								<br />
-								This will remove the section and all its seats.
+								Esto eliminará la sección y todos sus asientos.
 							</>
 						);
 					})()}
-					confirmLabel="Delete"
-					cancelLabel="Cancel"
+					confirmLabel="Eliminar"
+					cancelLabel="Cancelar"
 					onConfirm={() => {
 						const id = state.selectedBlockId!;
 						dispatch({ type: "REMOVE_BLOCK", blockId: id });

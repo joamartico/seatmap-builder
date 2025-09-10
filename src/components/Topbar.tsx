@@ -53,25 +53,25 @@ export function Topbar() {
 					className="px-2 py-1 text-sm rounded border bg-white hover:bg-gray-50"
 					onClick={() => dispatch({ type: "UNDO" })}
 				>
-					Undo
+					Deshacer
 				</button>
 				<button
 					className="px-2 py-1 text-sm rounded border bg-white hover:bg-gray-50"
 					onClick={() => dispatch({ type: "REDO" })}
 				>
-					Redo
+					Rehacer
 				</button>
 				<button
 					className="px-2 py-1 text-sm rounded border"
 					onClick={handleExport}
 				>
-					Export JSON
+					Exportar JSON
 				</button>
 				<button
 					className="px-2 py-1 text-sm rounded border"
 					onClick={handleImportClick}
 				>
-					Import JSON
+					Importar JSON
 				</button>
 				<input
 					ref={fileInputRef}

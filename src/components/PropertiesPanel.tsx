@@ -14,7 +14,7 @@ export function PropertiesPanel() {
 	if (!selected && !selectedBlock) {
 		return (
 			<div className="p-3 text-sm text-gray-500">
-				No selection. Select a seat or section.
+				Selecciona un asiento o una sección.
 			</div>
 		);
 	}
@@ -23,9 +23,9 @@ export function PropertiesPanel() {
 		<div className="p-3 space-y-4">
 			{selected && (
 				<div className="space-y-2">
-					<div className="font-semibold">Seat</div>
+					<div className="font-semibold">Asiento</div>
 					<div className="grid grid-cols-2 gap-2 items-center text-sm">
-						<label>Label</label>
+						<label>Etiqueta</label>
 						<input
 							className="border rounded px-2 py-1"
 							value={selected.label}
@@ -43,9 +43,9 @@ export function PropertiesPanel() {
 
 			{selectedBlock && (
 				<div className="space-y-2">
-					<div className="font-semibold">Section</div>
+					<div className="font-semibold">Sección</div>
 					<div className="grid grid-cols-2 gap-2 items-center text-sm">
-						<label>Name</label>
+						<label>Nombre</label>
 						<input
 							className="border rounded px-2 py-1"
 							value={selectedBlock.name}
@@ -55,7 +55,7 @@ export function PropertiesPanel() {
 								})
 							}
 						/>
-						<label>Rows</label>
+						<label>Filas</label>
 						<input
 							type="number"
 							className="border rounded px-2 py-1"
@@ -66,7 +66,7 @@ export function PropertiesPanel() {
 								})
 							}
 						/>
-						<label>Cols</label>
+						<label>Columnas</label>
 						<input
 							type="number"
 							className="border rounded px-2 py-1"
@@ -78,7 +78,7 @@ export function PropertiesPanel() {
 							}
 						/>
 						{/* Removed seat dimensions and gaps per request */}
-						<label>Row Labels</label>
+						<label>Etiquetas de filas</label>
 						<select
 							className="border rounded px-2 py-1"
 							value={selectedBlock.rowLabelStyle}

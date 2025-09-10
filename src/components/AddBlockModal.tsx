@@ -38,9 +38,11 @@ export function AddBlockModal({ open, onClose, onConfirm }: Props) {
 	return (
 		<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
 			<div className="bg-white rounded shadow-lg w-[92vw] max-w-md p-4">
-				<div className="text-base font-semibold mb-3">Add Section</div>
+				<div className="text-base font-semibold mb-3">
+					Agregar sección
+				</div>
 				<div className="grid grid-cols-2 gap-3 items-center text-sm">
-					<label>Rows</label>
+					<label>Filas</label>
 					<input
 						type="number"
 						min={1}
@@ -49,7 +51,7 @@ export function AddBlockModal({ open, onClose, onConfirm }: Props) {
 						value={rows}
 						onChange={(e) => setRows(Number(e.target.value))}
 					/>
-					<label>Seats per row</label>
+					<label>Asientos por fila</label>
 					<input
 						type="number"
 						min={1}
@@ -58,7 +60,7 @@ export function AddBlockModal({ open, onClose, onConfirm }: Props) {
 						value={cols}
 						onChange={(e) => setCols(Number(e.target.value))}
 					/>
-					<label>Row labeling</label>
+					<label>Etiquetado de filas</label>
 					<select
 						className="border rounded px-2 py-1"
 						value={rowLabelStyle}
@@ -71,7 +73,7 @@ export function AddBlockModal({ open, onClose, onConfirm }: Props) {
 						<option value="alpha">A, B, C</option>
 						<option value="numeric">1, 2, 3</option>
 					</select>
-					<label>Seat labeling</label>
+					<label>Etiquetado de asientos</label>
 					<select
 						className="border rounded px-2 py-1"
 						value={seatLabelStyle}
@@ -90,7 +92,7 @@ export function AddBlockModal({ open, onClose, onConfirm }: Props) {
 						className="px-3 py-1.5 text-sm rounded border"
 						onClick={onClose}
 					>
-						Cancel
+						Cancelar
 					</button>
 					<button
 						className="px-3 py-1.5 text-sm rounded border bg-gray-900 text-white"
@@ -103,7 +105,7 @@ export function AddBlockModal({ open, onClose, onConfirm }: Props) {
 							})
 						}
 					>
-						Add
+						Agregar
 					</button>
 				</div>
 			</div>
