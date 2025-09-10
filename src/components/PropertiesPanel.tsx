@@ -37,48 +37,6 @@ export function PropertiesPanel() {
 								})
 							}
 						/>
-						<label>Type</label>
-						<select
-							className="border rounded px-2 py-1"
-							value={selected.type}
-							onChange={(e) => {
-								const v = e.target.value as
-									| "standard"
-									| "vip"
-									| "accessible"
-									| "companion";
-								dispatch({
-									type: "UPDATE_SEAT",
-									seatId: selected.id,
-									patch: { type: v },
-								});
-							}}
-						>
-							<option value="standard">Standard</option>
-							<option value="vip">VIP</option>
-							<option value="accessible">Accessible</option>
-							<option value="companion">Companion</option>
-						</select>
-						<label>Status</label>
-						<select
-							className="border rounded px-2 py-1"
-							value={selected.status}
-							onChange={(e) => {
-								const v = e.target.value as
-									| "available"
-									| "reserved"
-									| "blocked";
-								dispatch({
-									type: "UPDATE_SEAT",
-									seatId: selected.id,
-									patch: { status: v },
-								});
-							}}
-						>
-							<option value="available">Available</option>
-							<option value="reserved">Reserved</option>
-							<option value="blocked">Blocked</option>
-						</select>
 					</div>
 				</div>
 			)}
@@ -119,50 +77,7 @@ export function PropertiesPanel() {
 								})
 							}
 						/>
-						<label>Seat W</label>
-						<input
-							type="number"
-							className="border rounded px-2 py-1"
-							value={selectedBlock.seatWidth}
-							onChange={(e) =>
-								rebuildBlockSeats(selectedBlock.id, {
-									seatWidth: Number(e.target.value),
-								})
-							}
-						/>
-						<label>Seat H</label>
-						<input
-							type="number"
-							className="border rounded px-2 py-1"
-							value={selectedBlock.seatHeight}
-							onChange={(e) =>
-								rebuildBlockSeats(selectedBlock.id, {
-									seatHeight: Number(e.target.value),
-								})
-							}
-						/>
-						<label>H Gap</label>
-						<input
-							type="number"
-							className="border rounded px-2 py-1"
-							value={selectedBlock.hGap}
-							onChange={(e) =>
-								rebuildBlockSeats(selectedBlock.id, {
-									hGap: Number(e.target.value),
-								})
-							}
-						/>
-						<label>V Gap</label>
-						<input
-							type="number"
-							className="border rounded px-2 py-1"
-							value={selectedBlock.vGap}
-							onChange={(e) =>
-								rebuildBlockSeats(selectedBlock.id, {
-									vGap: Number(e.target.value),
-								})
-							}
-						/>
+						{/* Removed seat dimensions and gaps per request */}
 						<label>Row Labels</label>
 						<select
 							className="border rounded px-2 py-1"
