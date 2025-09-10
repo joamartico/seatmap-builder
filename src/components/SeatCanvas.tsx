@@ -61,10 +61,18 @@ export function SeatCanvas() {
 		oy: number;
 	} | null>(null);
 	const spaceDown = useRef(false);
-	const { state, dispatch, addBlockAt } = useSeatMapStore();
+	const { state, dispatch, addBlockAt, rebuildBlockSeats } =
+		useSeatMapStore();
 	const { zoom, offsetX, offsetY, onWheel, setOffset, screenToWorld } =
 		usePanZoom();
 	const [bounds, setBounds] = useState<DOMRect | null>(null);
+	const moving = useRef<{
+		blockId: string;
+		startX: number;
+		startY: number;
+		startOriginX: number;
+		startOriginY: number;
+	} | null>(null);
 	const canvasCursor =
 		state.activeTool.kind === "pan"
 			? "cursor-grab"
@@ -158,15 +166,68 @@ export function SeatCanvas() {
 			const dy = e.clientY - dragging.current.y;
 			setOffset(dragging.current.ox + dx, dragging.current.oy + dy);
 		}
+		// dragging selected section by border
+		if (
+			moving.current &&
+			state.selectedBlockId === moving.current.blockId
+		) {
+			const dxWorld = (e.clientX - moving.current.startX) / zoom;
+			const dyWorld = (e.clientY - moving.current.startY) / zoom;
+			const nx = moving.current.startOriginX + dxWorld;
+			const ny = moving.current.startOriginY + dyWorld;
+			rebuildBlockSeats(moving.current.blockId, {
+				originX: nx,
+				originY: ny,
+			});
+		}
 	}
 
 	function onMouseUp() {
 		dragging.current = null;
+		moving.current = null;
 	}
 
 	function onSvgWheel(e: React.WheelEvent) {
 		if (!bounds) return;
 		onWheel(e.nativeEvent, bounds);
+	}
+
+	// Start moving from the HTML overlay (label area)
+	function startOverlayMove(
+		ev: React.MouseEvent,
+		blockId: string,
+		originX: number,
+		originY: number
+	) {
+		ev.preventDefault();
+		ev.stopPropagation();
+		moving.current = {
+			blockId,
+			startX: ev.clientX,
+			startY: ev.clientY,
+			startOriginX: originX,
+			startOriginY: originY,
+		};
+
+		const onMove = (e: MouseEvent) => {
+			if (!moving.current) return;
+			if (moving.current.blockId !== blockId) return;
+			const dxWorld = (e.clientX - moving.current.startX) / zoom;
+			const dyWorld = (e.clientY - moving.current.startY) / zoom;
+			rebuildBlockSeats(blockId, {
+				originX: moving.current.startOriginX + dxWorld,
+				originY: moving.current.startOriginY + dyWorld,
+			});
+		};
+
+		const onUp = () => {
+			window.removeEventListener("mousemove", onMove);
+			window.removeEventListener("mouseup", onUp);
+			moving.current = null;
+		};
+
+		window.addEventListener("mousemove", onMove);
+		window.addEventListener("mouseup", onUp);
 	}
 
 	function onSeatClick(seat: Seat, e: React.MouseEvent) {
@@ -318,6 +379,18 @@ export function SeatCanvas() {
 										strokeWidth={2}
 										strokeDasharray="6 4"
 										shapeRendering="crispEdges"
+										className="cursor-move"
+										onMouseDown={(ev) => {
+											ev.stopPropagation();
+											// start moving the selected section
+											moving.current = {
+												blockId: b.id,
+												startX: ev.clientX,
+												startY: ev.clientY,
+												startOriginX: b.originX,
+												startOriginY: b.originY,
+											};
+										}}
 									/>
 								</g>
 							);
@@ -382,8 +455,17 @@ export function SeatCanvas() {
 									</form>
 								) : (
 									<span
-										className="text-sm text-blue-900 font-medium truncate"
+										className="text-sm text-blue-900 font-medium truncate cursor-move"
 										style={{ maxWidth: width - 90 }}
+										title="Drag to move section"
+										onMouseDown={(ev) =>
+											startOverlayMove(
+												ev,
+												b.id,
+												b.originX,
+												b.originY
+											)
+										}
 									>
 										{label}
 									</span>
