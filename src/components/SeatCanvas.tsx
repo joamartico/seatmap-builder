@@ -4,6 +4,7 @@ import { useSeatMapStore } from "@/hooks/useSeatMapStore";
 import { usePanZoom } from "@/hooks/usePanZoom";
 import { AddBlockModal } from "@/components/AddBlockModal";
 import { ConfirmModal } from "@/components/ConfirmModal";
+import { LuPencil, LuTrash2 } from "react-icons/lu";
 import type { Seat } from "@/types/seatmap";
 
 function SeatRect({ seat, selected }: { seat: Seat; selected: boolean }) {
@@ -396,7 +397,7 @@ export function SeatCanvas() {
 											setEditingName(true);
 										}}
 									>
-										✎
+										<LuPencil className="w-4 h-4" />
 									</button>
 									<button
 										title="Delete section"
@@ -405,7 +406,7 @@ export function SeatCanvas() {
 											setShowDeleteConfirm(true)
 										}
 									>
-										🗑
+										<LuTrash2 className="w-4 h-4" />
 									</button>
 								</div>
 							</div>

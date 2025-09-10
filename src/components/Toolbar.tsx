@@ -1,5 +1,6 @@
 "use client";
 import React from "react";
+import { LuMousePointer2, LuHand, LuSquarePlus } from "react-icons/lu";
 import { useSeatMapStore } from "@/hooks/useSeatMapStore";
 import type { Tool } from "@/types/seatmap";
 
@@ -19,7 +20,7 @@ export function Toolbar() {
 				title="Select (V)"
 				onClick={() => setTool({ kind: "select" })}
 			>
-				⌖
+				<LuMousePointer2 className="w-4 h-4" />
 			</button>
 			<button
 				className={`w-full sm:w-8 sm:h-8 px-2 py-1 rounded border ${
@@ -30,7 +31,7 @@ export function Toolbar() {
 				title="Pan (Space)"
 				onClick={() => setTool({ kind: "pan" })}
 			>
-				✋
+				<LuHand className="w-4 h-4" />
 			</button>
 			<div className="h-px sm:h-0 sm:w-full w-px bg-black/10" />
 			<button
@@ -59,7 +60,7 @@ export function Toolbar() {
 					})
 				}
 			>
-				⊞
+				<LuSquarePlus className="w-4 h-4" />
 			</button>
 		</div>
 	);

@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import { useSeatMapStore } from "@/hooks/useSeatMapStore";
 import { ConfirmModal } from "@/components/ConfirmModal";
+import { LuTrash2, LuSquarePlus } from "react-icons/lu";
 
 export function Sidebar() {
 	const { state, dispatch } = useSeatMapStore();
@@ -13,8 +14,10 @@ export function Sidebar() {
 			<div className="p-3 border-b text-sm font-semibold">Sections</div>
 			<div className="flex-1 overflow-auto">
 				{state.seatMap.blocks.length === 0 ? (
-					<div className="p-3 text-sm text-gray-500">
-						No sections yet. Use ⊞ to add.
+					<div className="p-3 text-sm text-gray-500 flex items-center gap-1">
+						No sections yet. Use
+						<LuSquarePlus className="w-4 h-4 inline-block" />
+						to add.
 					</div>
 				) : (
 					<ul>
@@ -44,7 +47,7 @@ export function Sidebar() {
 									className="text-red-600"
 									onClick={() => setPendingDeleteId(b.id)}
 								>
-									✖
+									<LuTrash2 className="w-4 h-4" />
 								</button>
 							</li>
 						))}
