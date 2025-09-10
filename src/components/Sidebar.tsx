@@ -10,7 +10,7 @@ export function Sidebar() {
 	const pending = state.seatMap.blocks.find((b) => b.id === pendingDeleteId);
 
 	return (
-		<div className="h-full w-full sm:w-64 border-l border-black/10 bg-white flex flex-col">
+		<div className="h-full w-full border-l border-black/10 bg-white flex flex-col">
 			<div className="p-3 border-b text-sm font-semibold">Sections</div>
 			<div className="flex-1 overflow-auto">
 				{state.seatMap.blocks.length === 0 ? (
