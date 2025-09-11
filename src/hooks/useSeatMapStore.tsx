@@ -279,7 +279,7 @@ function createInitialSeatMap(): SeatMap {
 	const timestamp = new Date().toISOString();
 	return {
 		id,
-		name: "New Seat Map",
+		name: "Nuevo mapa",
 		width: 1600,
 		height: 900,
 		backgroundColor: "#fafafa",
