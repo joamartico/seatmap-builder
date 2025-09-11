@@ -13,6 +13,7 @@ import type {
 	SeatMapState,
 	Tool,
 } from "@/types/seatmap";
+import { H_GAP, SEAT_HEIGHT, SEAT_WIDTH, V_GAP } from "@/types/constants";
 
 type Action =
 	| { type: "SET_TOOL"; tool: Tool }
@@ -242,8 +243,8 @@ function buildSeatsForBlock(block: SeatBlock): Seat[] {
 			const rowIndex = block.startRowIndex + r;
 			const colIndex = block.startColIndex + c;
 			const id = `${block.id}::${rowIndex}-${colIndex}`;
-			const x = block.originX + c * (block.seatWidth + block.hGap);
-			const y = block.originY + r * (block.seatHeight + block.vGap);
+			const x = block.originX + c * (SEAT_WIDTH + H_GAP);
+			const y = block.originY + r * (SEAT_HEIGHT + V_GAP);
 			const override = block.rowLabelOverrides?.[r];
 			const rowLabel =
 				override != null && override !== ""
@@ -262,11 +263,7 @@ function buildSeatsForBlock(block: SeatBlock): Seat[] {
 				y,
 				row: rowIndex,
 				col: colIndex,
-				width: block.seatWidth,
-				height: block.seatHeight,
 				label,
-				type: "standard",
-				status: "available",
 			});
 		}
 	}
@@ -311,10 +308,6 @@ export function SeatMapProvider({ children }: { children: React.ReactNode }) {
 				preset: {
 					rows: 6,
 					cols: 10,
-					seatWidth: 32,
-					seatHeight: 32,
-					hGap: 8,
-					vGap: 8,
 					rowLabelStyle: "alpha",
 					seatLabelStyle: "numeric",
 					startRowIndex: 0,
@@ -353,11 +346,6 @@ export function SeatMapProvider({ children }: { children: React.ReactNode }) {
 				cols: preset.cols ?? 10,
 				originX: x,
 				originY: y,
-				seatWidth: preset.seatWidth ?? 32,
-				seatHeight: preset.seatHeight ?? 32,
-				hGap: preset.hGap ?? 8,
-				vGap: preset.vGap ?? 8,
-				rowLabel: "",
 				rowLabelStyle: preset.rowLabelStyle ?? "alpha",
 				seatLabelStyle: preset.seatLabelStyle ?? "numeric",
 				startRowIndex: preset.startRowIndex ?? 0,

@@ -25,10 +25,6 @@ export function Toolbar() {
 						preset: {
 							rows: 6,
 							cols: 10,
-							seatWidth: 32,
-							seatHeight: 32,
-							hGap: 8,
-							vGap: 8,
 							rowLabelStyle: "alpha",
 							seatLabelStyle: "numeric",
 							startRowIndex: 0,

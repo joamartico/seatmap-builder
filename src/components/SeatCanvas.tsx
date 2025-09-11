@@ -6,17 +6,18 @@ import { AddBlockModal } from "@/components/AddBlockModal";
 import { ConfirmModal } from "@/components/ConfirmModal";
 import { LuPencil, LuTrash2 } from "react-icons/lu";
 import type { Seat } from "@/types/seatmap";
+import { H_GAP, SEAT_HEIGHT, SEAT_WIDTH, V_GAP } from "@/types/constants";
 
 function SeatRect({ seat, selected }: { seat: Seat; selected: boolean }) {
-	const fontSize = Math.max(10, Math.floor(seat.height * 0.45));
+	const fontSize = Math.max(10, Math.floor(SEAT_HEIGHT * 0.45));
 	const textColor = selected ? "#1e3a8a" : "#374151"; // blue-800 or gray-700
 	return (
 		<g>
 			<rect
 				x={seat.x}
 				y={seat.y}
-				width={seat.width}
-				height={seat.height}
+				width={SEAT_WIDTH}
+				height={SEAT_HEIGHT}
 				rx={4}
 				ry={4}
 				className={`stroke-1 ${
@@ -26,8 +27,8 @@ function SeatRect({ seat, selected }: { seat: Seat; selected: boolean }) {
 				}`}
 			/>
 			<text
-				x={seat.x + seat.width / 2}
-				y={seat.y + seat.height / 2}
+				x={seat.x + SEAT_WIDTH / 2}
+				y={seat.y + SEAT_HEIGHT / 2}
 				textAnchor="middle"
 				alignmentBaseline="middle"
 				fontSize={fontSize}
@@ -338,9 +339,9 @@ export function SeatCanvas() {
 									: String(rowIndex + 1);
 							const y =
 								b.originY +
-								r * (b.seatHeight + b.vGap) +
-								b.seatHeight / 2;
-							const x = b.originX - Math.max(8, b.hGap) - 8; // left padding before first seat
+								r * (SEAT_HEIGHT + V_GAP) +
+								SEAT_HEIGHT / 2;
+							const x = b.originX - Math.max(8, H_GAP) - 8; // left padding before first seat
 							labels.push({
 								x,
 								y,
@@ -368,7 +369,7 @@ export function SeatCanvas() {
 											alignmentBaseline="middle"
 											fontSize={Math.max(
 												11,
-												Math.floor(b.seatHeight * 0.5)
+												Math.floor(SEAT_HEIGHT * 0.5)
 											)}
 											fill={
 												isSelected
@@ -411,9 +412,9 @@ export function SeatCanvas() {
 							);
 							if (!b) return null;
 							const bw =
-								b.cols * b.seatWidth + (b.cols - 1) * b.hGap;
+								b.cols * SEAT_WIDTH + (b.cols - 1) * H_GAP;
 							const bh =
-								b.rows * b.seatHeight + (b.rows - 1) * b.vGap;
+								b.rows * SEAT_HEIGHT + (b.rows - 1) * V_GAP;
 							return (
 								<g key={`sel-${b.id}`}>
 									{/* subtle highlight */}
@@ -485,9 +486,9 @@ export function SeatCanvas() {
 							: override ?? def;
 					const y =
 						b.originY +
-						rel * (b.seatHeight + b.vGap) +
-						b.seatHeight / 2;
-					const x = b.originX - Math.max(8, b.hGap) - 8; // same anchor as SVG label (textAnchor="end")
+						rel * (SEAT_HEIGHT + V_GAP) +
+						SEAT_HEIGHT / 2;
+					const x = b.originX - Math.max(8, H_GAP) - 8; // same anchor as SVG label (textAnchor="end")
 					const width = 40; // much narrower
 					const inputHeight = 20;
 					const left = offsetX + x * zoom - width; // right-align to label x
@@ -523,7 +524,7 @@ export function SeatCanvas() {
 						(x) => x.id === state.selectedBlockId
 					);
 					if (!b) return null;
-					const bw = b.cols * b.seatWidth + (b.cols - 1) * b.hGap;
+					const bw = b.cols * SEAT_WIDTH + (b.cols - 1) * H_GAP;
 					const sx = offsetX + b.originX * zoom;
 					const sy = offsetY + b.originY * zoom;
 					const top = Math.max(8, sy - 36);

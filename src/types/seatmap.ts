@@ -1,19 +1,10 @@
-export type SeatStatus = "available" | "reserved" | "blocked";
-
-export type SeatType = "standard" | "vip" | "accessible" | "companion";
-
 export type Seat = {
 	id: string;
 	x: number; // canvas coordinates (px)
 	y: number; // canvas coordinates (px)
 	row: number;
 	col: number;
-	width: number;
-	height: number;
 	label: string; // e.g., A1
-	zoneId?: string;
-	type: SeatType;
-	status: SeatStatus;
 };
 
 export type Zone = {
@@ -29,11 +20,6 @@ export type SeatBlock = {
 	cols: number;
 	originX: number; // top-left of block (px)
 	originY: number; // top-left of block (px)
-	seatWidth: number;
-	seatHeight: number;
-	hGap: number;
-	vGap: number;
-	rowLabel: string; // e.g., A, B, C or 1,2,3
 	rowLabelStyle: "alpha" | "numeric";
 	seatLabelStyle?: "alpha" | "numeric"; // how to label seats within a row (columns)
 	// Optional overrides for row labels per block (relative row index 0..rows-1)
@@ -64,10 +50,6 @@ export type Tool =
 				SeatBlock,
 				| "rows"
 				| "cols"
-				| "seatWidth"
-				| "seatHeight"
-				| "hGap"
-				| "vGap"
 				| "rowLabelStyle"
 				| "seatLabelStyle"
 				| "startRowIndex"
