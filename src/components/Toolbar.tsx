@@ -15,8 +15,8 @@ export function Toolbar() {
 			<button
 				className={`w-full flex items-center gap-2 px-2 py-1 rounded border ${
 					state.activeTool.kind === "addBlock"
-						? "bg-gray-900 text-white"
-						: "bg-white"
+						? "bg-gray-900 text-white border-blue-900"
+						: "bg-white border-gray-300"
 				}`}
 				title="Crear sección"
 				onClick={() =>
@@ -45,8 +45,8 @@ export function Toolbar() {
 			<button
 				className={`w-full flex items-center gap-2 px-2 py-1 rounded border ${
 					state.activeTool.kind === "select"
-						? "bg-gray-900 text-white"
-						: "bg-white"
+						? "bg-gray-900 text-white border-blue-900"
+						: "bg-white border-gray-300"
 				}`}
 				title="Seleccionar (V)"
 				onClick={() => setTool({ kind: "select" })}
@@ -58,8 +58,8 @@ export function Toolbar() {
 			<button
 				className={`w-full flex items-center gap-2 px-2 py-1 rounded border ${
 					state.activeTool.kind === "pan"
-						? "bg-gray-900 text-white"
-						: "bg-white"
+						? "bg-gray-900 text-white border-blue-900"
+						: "bg-white border-gray-300"
 				}`}
 				title="Mover lienzo (Espacio)"
 				onClick={() => setTool({ kind: "pan" })}
