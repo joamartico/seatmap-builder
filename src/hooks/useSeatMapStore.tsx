@@ -26,6 +26,8 @@ type Action =
 	| { type: "REMOVE_SEATS"; seatIds: string[] }
 	| { type: "SELECT_SEATS"; ids: string[] }
 	| { type: "SELECT_BLOCK"; id?: string }
+	| { type: "SELECT_ROW"; blockId?: string; row?: number }
+	| { type: "SET_ROW_LABEL"; blockId: string; row: number; label: string }
 	| { type: "LOAD"; seatMap: SeatMap }
 	| { type: "UNDO" }
 	| { type: "REDO" };
@@ -88,6 +90,10 @@ function reducer(state: SeatMapState, action: Action): SeatMapState {
 			return {
 				...withHistory(state, next),
 				selectedBlockId: stillSelected,
+				selectedRow:
+					state.selectedRow?.blockId === action.blockId
+						? undefined
+						: state.selectedRow,
 			};
 		}
 		case "ADD_SEATS": {
@@ -118,9 +124,70 @@ function reducer(state: SeatMapState, action: Action): SeatMapState {
 			return withHistory(state, next);
 		}
 		case "SELECT_SEATS":
-			return { ...state, selectedSeatIds: action.ids };
+			return {
+				...state,
+				selectedSeatIds: action.ids,
+				selectedRow: undefined,
+			};
 		case "SELECT_BLOCK":
-			return { ...state, selectedBlockId: action.id };
+			return {
+				...state,
+				selectedBlockId: action.id,
+				selectedRow: undefined,
+			};
+		case "SELECT_ROW":
+			return {
+				...state,
+				selectedBlockId: action.blockId,
+				selectedRow:
+					action.blockId != null && action.row != null
+						? { blockId: action.blockId, row: action.row }
+						: undefined,
+			};
+		case "SET_ROW_LABEL": {
+			const { blockId, row, label } = action;
+			let updatedBlock: SeatBlock | undefined;
+			const updatedBlocks = state.seatMap.blocks.map((b) => {
+				if (b.id !== blockId) return b;
+				const current = { ...(b.rowLabelOverrides ?? {}) } as Record<
+					number,
+					string
+				>;
+				if (label.trim() === "") {
+					delete current[row];
+				} else {
+					current[row] = label;
+				}
+				updatedBlock = { ...b, rowLabelOverrides: current };
+				return updatedBlock;
+			});
+			const next: SeatMap = {
+				...state.seatMap,
+				blocks: updatedBlocks,
+				seats: state.seatMap.seats.map((s) => {
+					if (!updatedBlock) return s;
+					if (!s.id.startsWith(`${updatedBlock.id}::`)) return s;
+					// relative row within the block
+					const rel = s.row - updatedBlock.startRowIndex;
+					if (rel !== row) return s;
+					// recompute label for this seat using updated overrides
+					const rowOverride = updatedBlock.rowLabelOverrides?.[rel];
+					const rowLabel =
+						rowOverride != null && rowOverride !== ""
+							? rowOverride
+							: updatedBlock.rowLabelStyle === "alpha"
+							? alphaLabel(s.row)
+							: String(s.row + 1);
+					const colLabel =
+						updatedBlock.seatLabelStyle === "alpha"
+							? alphaLabel(s.col)
+							: String(s.col + 1);
+					return { ...s, label: `${rowLabel}${colLabel}` };
+				}),
+				updatedAt: now(),
+			};
+			return withHistory(state, next);
+		}
 		case "LOAD":
 			return {
 				...state,
@@ -129,6 +196,7 @@ function reducer(state: SeatMapState, action: Action): SeatMapState {
 				future: [],
 				selectedSeatIds: [],
 				selectedBlockId: undefined,
+				selectedRow: undefined,
 			};
 		case "UNDO": {
 			const past = state.past.slice();
@@ -176,8 +244,11 @@ function buildSeatsForBlock(block: SeatBlock): Seat[] {
 			const id = `${block.id}::${rowIndex}-${colIndex}`;
 			const x = block.originX + c * (block.seatWidth + block.hGap);
 			const y = block.originY + r * (block.seatHeight + block.vGap);
+			const override = block.rowLabelOverrides?.[r];
 			const rowLabel =
-				block.rowLabelStyle === "alpha"
+				override != null && override !== ""
+					? override
+					: block.rowLabelStyle === "alpha"
 					? alphaLabel(rowIndex)
 					: String(rowIndex + 1);
 			const colLabel =
@@ -234,6 +305,7 @@ export function SeatMapProvider({ children }: { children: React.ReactNode }) {
 			seatMap: createInitialSeatMap(),
 			selectedSeatIds: [],
 			selectedBlockId: undefined,
+			selectedRow: undefined,
 			activeTool: { kind: "select" },
 			zoom: 1,
 			offsetX: 0,
@@ -261,7 +333,7 @@ export function SeatMapProvider({ children }: { children: React.ReactNode }) {
 				`blk_${Math.random().toString(36).slice(2)}`;
 			const block: SeatBlock = {
 				id,
-				name: preset.name ?? "Block",
+				name: preset.name ?? "Sección",
 				rows: preset.rows ?? 5,
 				cols: preset.cols ?? 10,
 				originX: x,

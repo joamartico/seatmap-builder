@@ -36,6 +36,8 @@ export type SeatBlock = {
 	rowLabel: string; // e.g., A, B, C or 1,2,3
 	rowLabelStyle: "alpha" | "numeric";
 	seatLabelStyle?: "alpha" | "numeric"; // how to label seats within a row (columns)
+	// Optional overrides for row labels per block (relative row index 0..rows-1)
+	rowLabelOverrides?: { [relativeRow: number]: string };
 	startRowIndex: number; // 0-based
 	startColIndex: number; // 0-based
 };
@@ -77,6 +79,7 @@ export type SeatMapState = {
 	seatMap: SeatMap;
 	selectedSeatIds: string[];
 	selectedBlockId?: string;
+	selectedRow?: { blockId: string; row: number };
 	activeTool: Tool;
 	zoom: number; // 0.25 - 4
 	offsetX: number;

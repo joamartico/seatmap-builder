@@ -88,6 +88,12 @@ export function SeatCanvas() {
 	const [nameDraft, setNameDraft] = useState("");
 	const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
+	// Local draft for the selected row label input to avoid fallback-to-default while editing
+	const [rowLabelDraft, setRowLabelDraft] = useState<{
+		key?: string;
+		value: string;
+	}>({ key: undefined, value: "" });
+
 	useEffect(() => {
 		const el = wrapperRef.current;
 		if (!el) return;
@@ -192,6 +198,30 @@ export function SeatCanvas() {
 		onWheel(e.nativeEvent, bounds);
 	}
 
+	// Sync draft value when selection changes to a different row
+	useEffect(() => {
+		const sel = state.selectedRow;
+		if (!sel) {
+			setRowLabelDraft({ key: undefined, value: "" });
+			return;
+		}
+		const b = state.seatMap.blocks.find((x) => x.id === sel.blockId);
+		if (!b) return;
+		const rel = sel.row;
+		if (rel < 0 || rel >= b.rows) return;
+		const rowIndex = b.startRowIndex + rel;
+		const override = b.rowLabelOverrides?.[rel];
+		const def =
+			b.rowLabelStyle === "alpha"
+				? alphaLabel(rowIndex)
+				: String(rowIndex + 1);
+		const current = override ?? def;
+		const key = `${b.id}:${rel}`;
+		setRowLabelDraft((prev) =>
+			prev.key === key ? prev : { key, value: current }
+		);
+	}, [state.selectedRow, state.seatMap.blocks]);
+
 	// Start moving from the HTML overlay (label area)
 	function startOverlayMove(
 		ev: React.MouseEvent,
@@ -295,11 +325,15 @@ export function SeatCanvas() {
 							y: number;
 							text: string;
 							key: string;
+							relRow: number;
 						}[] = [];
 						for (let r = 0; r < b.rows; r++) {
 							const rowIndex = b.startRowIndex + r;
+							const override = b.rowLabelOverrides?.[r];
 							const rowText =
-								b.rowLabelStyle === "alpha"
+								override != null && override !== ""
+									? override
+									: b.rowLabelStyle === "alpha"
 									? alphaLabel(rowIndex)
 									: String(rowIndex + 1);
 							const y =
@@ -312,26 +346,49 @@ export function SeatCanvas() {
 								y,
 								text: rowText,
 								key: `${b.id}-rowlbl-${rowIndex}`,
+								relRow: r,
 							});
 						}
 						return (
 							<g key={`rowlabels-${b.id}`}>
-								{labels.map((L) => (
-									<text
-										key={L.key}
-										x={L.x}
-										y={L.y}
-										textAnchor="end"
-										alignmentBaseline="middle"
-										fontSize={Math.max(
-											11,
-											Math.floor(b.seatHeight * 0.5)
-										)}
-										fill="#6b7280" // gray-500
-									>
-										{L.text}
-									</text>
-								))}
+								{labels.map((L) => {
+									const isSelected =
+										state.selectedRow?.blockId === b.id &&
+										state.selectedRow?.row === L.relRow;
+									if (isSelected) {
+										// Replace the label with an input overlay; hide this SVG text
+										return null;
+									}
+									return (
+										<text
+											key={L.key}
+											x={L.x}
+											y={L.y}
+											textAnchor="end"
+											alignmentBaseline="middle"
+											fontSize={Math.max(
+												11,
+												Math.floor(b.seatHeight * 0.5)
+											)}
+											fill={
+												isSelected
+													? "#1d4ed8" // blue-700
+													: "#6b7280"
+											}
+											className="cursor-pointer select-none"
+											onMouseDown={(ev) => {
+												ev.stopPropagation();
+												dispatch({
+													type: "SELECT_ROW",
+													blockId: b.id,
+													row: L.relRow,
+												});
+											}}
+										>
+											{L.text}
+										</text>
+									);
+								})}
 							</g>
 						);
 					})}
@@ -403,6 +460,60 @@ export function SeatCanvas() {
 				{Math.round(zoom * 100)}% · {Math.round(offsetX)},{" "}
 				{Math.round(offsetY)}
 			</div>
+
+			{/* Inline row label editor when a row is selected (HTML overlay), replacing the SVG label position */}
+			{state.selectedRow &&
+				bounds &&
+				(() => {
+					const sel = state.selectedRow!;
+					const b = state.seatMap.blocks.find(
+						(x) => x.id === sel.blockId
+					);
+					if (!b) return null;
+					const rel = sel.row;
+					if (rel < 0 || rel >= b.rows) return null;
+					const rowIndex = b.startRowIndex + rel;
+					const override = b.rowLabelOverrides?.[rel];
+					const def =
+						b.rowLabelStyle === "alpha"
+							? alphaLabel(rowIndex)
+							: String(rowIndex + 1);
+					const key = `${b.id}:${rel}`;
+					const current =
+						rowLabelDraft.key === key
+							? rowLabelDraft.value
+							: override ?? def;
+					const y =
+						b.originY +
+						rel * (b.seatHeight + b.vGap) +
+						b.seatHeight / 2;
+					const x = b.originX - Math.max(8, b.hGap) - 8; // same anchor as SVG label (textAnchor="end")
+					const width = 40; // much narrower
+					const inputHeight = 20;
+					const left = offsetX + x * zoom - width; // right-align to label x
+					const top = offsetY + y * zoom - inputHeight / 2; // vertically centered
+					return (
+						<input
+							className="absolute z-10 border rounded px-1 py-0.5 text-xs bg-white shadow"
+							style={{
+								left: Math.max(4, left),
+								top: Math.max(4, top),
+								width,
+							}}
+							value={current}
+							onChange={(e) => {
+								const next = e.target.value;
+								setRowLabelDraft({ key, value: next });
+								dispatch({
+									type: "SET_ROW_LABEL",
+									blockId: b.id,
+									row: rel,
+									label: next,
+								});
+							}}
+						/>
+					);
+				})()}
 
 			{/* Selected section toolbar (HTML overlay) */}
 			{state.selectedBlockId &&
