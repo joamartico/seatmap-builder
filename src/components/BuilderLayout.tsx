@@ -17,7 +17,7 @@ export function BuilderLayout() {
 						<Toolbar />
 					</div>
 					<SeatCanvas />
-					<div className="hidden md:flex md:flex-col md:w-80 border-l border-black/10 bg-white">
+					<div className="hidden md:flex md:flex-col md:w-90 border-l border-black/10 bg-white">
 						<PropertiesPanel />
 						<Sidebar />
 					</div>

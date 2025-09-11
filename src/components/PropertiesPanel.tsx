@@ -140,7 +140,7 @@ export function PropertiesPanel() {
 							}
 						/>
 						{/* Removed seat dimensions and gaps per request */}
-						<label>Etiquetas de filas</label>
+						<label>Etiquetado de filas</label>
 						<select
 							className="border rounded px-2 py-1"
 							value={selectedBlock.rowLabelStyle}
@@ -151,8 +151,23 @@ export function PropertiesPanel() {
 								});
 							}}
 						>
-							<option value="alpha">A, B, C</option>
-							<option value="numeric">1, 2, 3</option>
+							<option value="alpha">Alfabético</option>
+							<option value="numeric">Numérico</option>
+						</select>
+
+						<label>Etiquetado de columnas</label>
+						<select
+							className="border rounded px-2 py-1"
+							value={selectedBlock.seatLabelStyle ?? "numeric"}
+							onChange={(e) => {
+								const v = e.target.value as "alpha" | "numeric";
+								rebuildBlockSeats(selectedBlock.id, {
+									seatLabelStyle: v,
+								});
+							}}
+						>
+							<option value="numeric">Numérico</option>
+							<option value="alpha">Alfabético</option>
 						</select>
 
 						{rowEdit && (

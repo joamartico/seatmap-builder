@@ -70,10 +70,10 @@ export function AddBlockModal({ open, onClose, onConfirm }: Props) {
 							)
 						}
 					>
-						<option value="alpha">A, B, C</option>
-						<option value="numeric">1, 2, 3</option>
+						<option value="alpha">Alfabético</option>
+						<option value="numeric">Numérico</option>
 					</select>
-					<label>Etiquetado de asientos</label>
+					<label>Etiquetado de columnas</label>
 					<select
 						className="border rounded px-2 py-1"
 						value={seatLabelStyle}
@@ -83,8 +83,8 @@ export function AddBlockModal({ open, onClose, onConfirm }: Props) {
 							)
 						}
 					>
-						<option value="numeric">1, 2, 3</option>
-						<option value="alpha">A, B, C</option>
+						<option value="numeric">Numérico</option>
+						<option value="alpha">Alfabético</option>
 					</select>
 				</div>
 				<div className="mt-4 flex justify-end gap-2">
