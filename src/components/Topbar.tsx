@@ -51,7 +51,11 @@ export function Topbar() {
 		dispatch({ type: "LOAD", seatMap: newMap });
 	};
 
-	const handleImportClick = () => fileInputRef.current?.click();
+	const handleImportClick = () => {
+		// Reset so selecting the same file again will trigger onChange
+		if (fileInputRef.current) fileInputRef.current.value = "";
+		fileInputRef.current?.click();
+	};
 
 	const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
 		const file = e.target.files?.[0];
@@ -63,6 +67,8 @@ export function Topbar() {
 		} catch {
 			alert("Archivo inválido");
 		}
+		// Allow importing the same file again in the future
+		e.target.value = "";
 	};
 
 	return (
