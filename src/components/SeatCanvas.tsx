@@ -62,6 +62,7 @@ export function SeatCanvas() {
 		oy: number;
 	} | null>(null);
 	const spaceDown = useRef(false);
+	const [spaceHeld, setSpaceHeld] = useState(false);
 	const { state, dispatch, addBlockAt, rebuildBlockSeats } =
 		useSeatMapStore();
 	const { zoom, offsetX, offsetY, onWheel, setOffset, screenToWorld } =
@@ -74,12 +75,13 @@ export function SeatCanvas() {
 		startOriginX: number;
 		startOriginY: number;
 	} | null>(null);
-	const canvasCursor =
-		state.activeTool.kind === "pan"
-			? "cursor-grab"
-			: state.activeTool.kind === "addBlock"
-			? "cursor-copy"
-			: "cursor-default";
+	const canvasCursor = (() => {
+		const panLike = state.activeTool.kind === "pan" || spaceHeld;
+		if (panLike)
+			return dragging.current ? "cursor-grabbing" : "cursor-grab";
+		if (state.activeTool.kind === "addBlock") return "cursor-copy";
+		return "cursor-default";
+	})();
 	const [pendingAddAt, setPendingAddAt] = useState<{
 		x: number;
 		y: number;
@@ -108,7 +110,16 @@ export function SeatCanvas() {
 	useEffect(() => {
 		const onKeyDown = (e: KeyboardEvent) => {
 			if (e.code === "Space") {
+				// avoid page scroll with spacebar
+				if (
+					!/^(INPUT|TEXTAREA)$/.test(
+						(e.target as HTMLElement)?.tagName || ""
+					)
+				) {
+					e.preventDefault();
+				}
 				spaceDown.current = true;
+				setSpaceHeld(true);
 			}
 			if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "z") {
 				e.preventDefault();
@@ -128,7 +139,10 @@ export function SeatCanvas() {
 			}
 		};
 		const onKeyUp = (e: KeyboardEvent) => {
-			if (e.code === "Space") spaceDown.current = false;
+			if (e.code === "Space") {
+				spaceDown.current = false;
+				setSpaceHeld(false);
+			}
 		};
 		window.addEventListener("keydown", onKeyDown);
 		window.addEventListener("keyup", onKeyUp);
@@ -149,7 +163,7 @@ export function SeatCanvas() {
 
 	function onMouseDown(e: React.MouseEvent) {
 		if (!bounds) return;
-		const isPan = state.activeTool.kind === "pan" || spaceDown.current;
+		const isPan = state.activeTool.kind === "pan" || spaceHeld;
 		if (isPan) {
 			startPan(e.clientX, e.clientY);
 			return;
