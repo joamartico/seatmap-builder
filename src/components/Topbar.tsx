@@ -1,5 +1,6 @@
 "use client";
 import React, { useRef, useState, useCallback } from "react";
+import { FiRotateCcw, FiRotateCw } from "react-icons/fi";
 import { useSeatMapStore } from "@/hooks/useSeatMapStore";
 import type { SeatMap } from "@/types/seatmap";
 import { NamePromptModal } from "./NamePromptModal";
@@ -78,16 +79,22 @@ export function Topbar() {
 			</div>
 			<div className="flex items-center gap-2">
 				<button
-					className="px-2 py-1 text-sm rounded border bg-white hover:bg-gray-50 cursor-pointer"
+					className="px-2 py-1 text-sm rounded border bg-white hover:bg-gray-50 cursor-pointer flex items-center"
 					onClick={() => dispatch({ type: "UNDO" })}
 				>
-					Deshacer
+					<span className="inline-flex items-center gap-1.5">
+						<FiRotateCcw aria-hidden="true" size={16} />
+						<span>Deshacer</span>
+					</span>
 				</button>
 				<button
-					className="px-2 py-1 text-sm rounded border bg-white hover:bg-gray-50 cursor-pointer"
+					className="px-2 py-1 text-sm rounded border bg-white hover:bg-gray-50 cursor-pointer flex items-center"
 					onClick={() => dispatch({ type: "REDO" })}
 				>
-					Rehacer
+					<span className="inline-flex items-center gap-1.5">
+						<FiRotateCw aria-hidden="true" size={16} />
+						<span>Rehacer</span>
+					</span>
 				</button>
 				<button
 					className="px-2 py-1 text-sm rounded border bg-white hover:bg-gray-50 cursor-pointer"
