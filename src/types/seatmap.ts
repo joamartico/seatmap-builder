@@ -22,6 +22,10 @@ export type SeatBlock = {
 	originY: number; // top-left of block (px)
 	rowLabelStyle: "alpha" | "numeric";
 	seatLabelStyle?: "alpha" | "numeric"; // how to label seats within a row (columns)
+	rotation?: number; // degrees, 0 by default; rotates around block center
+	// Optional per-bloque separaciones; si no se proveen, usar valores por defecto globales
+	hGap?: number; // separación horizontal entre asientos (px)
+	vGap?: number; // separación vertical entre filas (px)
 	// Optional overrides for row labels per block (relative row index 0..rows-1)
 	rowLabelOverrides?: { [relativeRow: number]: string };
 	startRowIndex: number; // 0-based
@@ -54,6 +58,7 @@ export type Tool =
 				| "seatLabelStyle"
 				| "startRowIndex"
 				| "startColIndex"
+				| "rotation"
 			> & { name?: string };
 	  };
 

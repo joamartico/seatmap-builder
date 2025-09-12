@@ -8,6 +8,14 @@ export function PropertiesPanel() {
 		key: undefined,
 		value: "",
 	});
+	const [rowStartDraft, setRowStartDraft] = useState<{
+		key?: string;
+		value: string;
+	}>({ key: undefined, value: "" });
+	const [colStartDraft, setColStartDraft] = useState<{
+		key?: string;
+		value: string;
+	}>({ key: undefined, value: "" });
 	const selected = state.selectedSeatIds[0]
 		? state.seatMap.seats.find((s) => s.id === state.selectedSeatIds[0])
 		: undefined;
@@ -27,6 +35,34 @@ export function PropertiesPanel() {
 			n = Math.floor(n / 26) - 1;
 		}
 		return s;
+	}
+
+	function alphaToIndex(s: string): number | null {
+		const t = s.trim().toUpperCase();
+		if (!/^[A-Z]+$/.test(t)) return null;
+		let n = 0;
+		for (let i = 0; i < t.length; i++) {
+			n = n * 26 + (t.charCodeAt(i) - 65 + 1);
+		}
+		return n - 1; // 0-based
+	}
+
+	function parseStart(style: "alpha" | "numeric", v: string): number | null {
+		const trimmed = v.trim();
+		if (trimmed === "") return null;
+		if (style === "alpha") {
+			const asAlpha = alphaToIndex(trimmed);
+			if (asAlpha != null) return Math.max(0, asAlpha);
+			const asNum = Number(trimmed);
+			if (!Number.isNaN(asNum)) return Math.max(0, Math.floor(asNum - 1));
+			return null;
+		} else {
+			const asNum = Number(trimmed);
+			if (!Number.isNaN(asNum)) return Math.max(0, Math.floor(asNum - 1));
+			const asAlpha = alphaToIndex(trimmed);
+			if (asAlpha != null) return Math.max(0, asAlpha);
+			return null;
+		}
 	}
 
 	const rowEdit = (() => {
@@ -72,6 +108,25 @@ export function PropertiesPanel() {
 			prev.key === key ? prev : { key, value: rowEdit.current }
 		);
 	}, [rowEdit]);
+
+	// reset start drafts when block or styles change
+	useEffect(() => {
+		if (!selectedBlock) {
+			setRowStartDraft({ key: undefined, value: "" });
+			setColStartDraft({ key: undefined, value: "" });
+			return;
+		}
+		const rowKey = `row-start:${selectedBlock.id}:${selectedBlock.rowLabelStyle}`;
+		const colKey = `col-start:${selectedBlock.id}:${
+			selectedBlock.seatLabelStyle ?? "numeric"
+		}`;
+		setRowStartDraft((prev) =>
+			prev.key === rowKey ? prev : { key: undefined, value: "" }
+		);
+		setColStartDraft((prev) =>
+			prev.key === colKey ? prev : { key: undefined, value: "" }
+		);
+	}, [selectedBlock]);
 
 	if (!selected && !selectedBlock) {
 		return (
@@ -139,7 +194,48 @@ export function PropertiesPanel() {
 								})
 							}
 						/>
-						{/* Removed seat dimensions and gaps per request */}
+						<label>Rotación</label>
+						<input
+							type="number"
+							min={-180}
+							max={180}
+							step={1}
+							className="border rounded px-2 py-1"
+							value={selectedBlock.rotation ?? 0}
+							onChange={(e) =>
+								dispatch({
+									type: "UPDATE_BLOCK",
+									blockId: selectedBlock.id,
+									patch: { rotation: Number(e.target.value) },
+								})
+							}
+						/>
+
+						<label>Separación de asientos</label>
+						<input
+							type="number"
+							min={0}
+							className="border rounded px-2 py-1"
+							value={selectedBlock.hGap ?? 0}
+							onChange={(e) =>
+								rebuildBlockSeats(selectedBlock.id, {
+									hGap: Number(e.target.value),
+								})
+							}
+						/>
+
+						<label>Separación de filas</label>
+						<input
+							type="number"
+							min={0}
+							className="border rounded px-2 py-1"
+							value={selectedBlock.vGap ?? 0}
+							onChange={(e) =>
+								rebuildBlockSeats(selectedBlock.id, {
+									vGap: Number(e.target.value),
+								})
+							}
+						/>
 						<label>Etiquetado de filas</label>
 						<select
 							className="border rounded px-2 py-1"
@@ -155,6 +251,40 @@ export function PropertiesPanel() {
 							<option value="numeric">Numérico</option>
 						</select>
 
+						<label>Empezando por</label>
+						<input
+							className="border rounded px-2 py-1"
+							placeholder={
+								selectedBlock.rowLabelStyle === "alpha"
+									? "A"
+									: "1"
+							}
+							value={(() => {
+								const key = `row-start:${selectedBlock.id}:${selectedBlock.rowLabelStyle}`;
+								return rowStartDraft.key === key
+									? rowStartDraft.value
+									: selectedBlock.rowLabelStyle === "alpha"
+									? alphaLabel(selectedBlock.startRowIndex)
+									: String(selectedBlock.startRowIndex + 1);
+							})()}
+							onChange={(e) => {
+								const key = `row-start:${selectedBlock.id}:${selectedBlock.rowLabelStyle}`;
+								const next = e.target.value;
+								setRowStartDraft({ key, value: next });
+								const idx = parseStart(
+									selectedBlock.rowLabelStyle,
+									next
+								);
+								if (idx != null)
+									rebuildBlockSeats(selectedBlock.id, {
+										startRowIndex: idx,
+									});
+							}}
+							onBlur={() =>
+								setRowStartDraft({ key: undefined, value: "" })
+							}
+						/>
+
 						<label>Etiquetado de columnas</label>
 						<select
 							className="border rounded px-2 py-1"
@@ -169,6 +299,42 @@ export function PropertiesPanel() {
 							<option value="numeric">Numérico</option>
 							<option value="alpha">Alfabético</option>
 						</select>
+
+						<label>Empezando por</label>
+						<input
+							className="border rounded px-2 py-1"
+							placeholder={
+								(selectedBlock.seatLabelStyle ?? "numeric") ===
+								"alpha"
+									? "A"
+									: "1"
+							}
+							value={(() => {
+								const style = (selectedBlock.seatLabelStyle ??
+									"numeric") as "alpha" | "numeric";
+								const key = `col-start:${selectedBlock.id}:${style}`;
+								return colStartDraft.key === key
+									? colStartDraft.value
+									: style === "alpha"
+									? alphaLabel(selectedBlock.startColIndex)
+									: String(selectedBlock.startColIndex + 1);
+							})()}
+							onChange={(e) => {
+								const style = (selectedBlock.seatLabelStyle ??
+									"numeric") as "alpha" | "numeric";
+								const key = `col-start:${selectedBlock.id}:${style}`;
+								const next = e.target.value;
+								setColStartDraft({ key, value: next });
+								const idx = parseStart(style, next);
+								if (idx != null)
+									rebuildBlockSeats(selectedBlock.id, {
+										startColIndex: idx,
+									});
+							}}
+							onBlur={() =>
+								setColStartDraft({ key: undefined, value: "" })
+							}
+						/>
 
 						{rowEdit && (
 							<>

@@ -4,7 +4,7 @@ import { useSeatMapStore } from "@/hooks/useSeatMapStore";
 import { usePanZoom } from "@/hooks/usePanZoom";
 import { AddBlockModal } from "@/components/AddBlockModal";
 import { ConfirmModal } from "@/components/ConfirmModal";
-import { LuPencil, LuTrash2 } from "react-icons/lu";
+// icons removed; section toolbar was converted to SVG-only interactions
 import type { Seat } from "@/types/seatmap";
 import { H_GAP, SEAT_HEIGHT, SEAT_WIDTH, V_GAP } from "@/types/constants";
 
@@ -75,6 +75,11 @@ export function SeatCanvas() {
 		startOriginX: number;
 		startOriginY: number;
 	} | null>(null);
+	const rotating = useRef<{
+		blockId: string;
+		startAngle: number; // degrees
+		startRotation: number; // degrees
+	} | null>(null);
 	const canvasCursor = (() => {
 		const panLike = state.activeTool.kind === "pan" || spaceHeld;
 		if (panLike)
@@ -87,8 +92,7 @@ export function SeatCanvas() {
 		y: number;
 	} | null>(null);
 	const [showAddModal, setShowAddModal] = useState(false);
-	const [editingName, setEditingName] = useState(false);
-	const [nameDraft, setNameDraft] = useState("");
+	// previously used for HTML overlay editing; removed when toolbar moved into SVG
 	const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
 	// Local draft for the selected row label input to avoid fallback-to-default while editing
@@ -187,6 +191,37 @@ export function SeatCanvas() {
 			const dy = e.clientY - dragging.current.y;
 			setOffset(dragging.current.ox + dx, dragging.current.oy + dy);
 		}
+		// rotating selected section via handle
+		if (rotating.current && bounds) {
+			const current = rotating.current;
+			const { x: wx, y: wy } = screenToWorld(
+				e.clientX,
+				e.clientY,
+				bounds
+			);
+			// find block center
+			const b = state.seatMap.blocks.find(
+				(x) => x.id === current.blockId
+			);
+			if (b) {
+				const hGap = b.hGap ?? H_GAP;
+				const vGap = b.vGap ?? V_GAP;
+				const bw = b.cols * SEAT_WIDTH + (b.cols - 1) * hGap;
+				const bh = b.rows * SEAT_HEIGHT + (b.rows - 1) * vGap;
+				const cx = b.originX + bw / 2;
+				const cy = b.originY + bh / 2;
+				const ang = (Math.atan2(wy - cy, wx - cx) * 180) / Math.PI; // degrees
+				let rot = current.startRotation + (ang - current.startAngle);
+				// normalize to [-180, 180]
+				rot = ((((rot + 180) % 360) + 360) % 360) - 180;
+				rot = Math.round(rot);
+				dispatch({
+					type: "UPDATE_BLOCK",
+					blockId: b.id,
+					patch: { rotation: rot },
+				});
+			}
+		}
 		// dragging selected section by border
 		if (
 			moving.current &&
@@ -206,6 +241,7 @@ export function SeatCanvas() {
 	function onMouseUp() {
 		dragging.current = null;
 		moving.current = null;
+		rotating.current = null;
 	}
 
 	function onSvgWheel(e: React.WheelEvent) {
@@ -238,42 +274,7 @@ export function SeatCanvas() {
 	}, [state.selectedRow, state.seatMap.blocks]);
 
 	// Start moving from the HTML overlay (label area)
-	function startOverlayMove(
-		ev: React.MouseEvent,
-		blockId: string,
-		originX: number,
-		originY: number
-	) {
-		ev.preventDefault();
-		ev.stopPropagation();
-		moving.current = {
-			blockId,
-			startX: ev.clientX,
-			startY: ev.clientY,
-			startOriginX: originX,
-			startOriginY: originY,
-		};
-
-		const onMove = (e: MouseEvent) => {
-			if (!moving.current) return;
-			if (moving.current.blockId !== blockId) return;
-			const dxWorld = (e.clientX - moving.current.startX) / zoom;
-			const dyWorld = (e.clientY - moving.current.startY) / zoom;
-			rebuildBlockSeats(blockId, {
-				originX: moving.current.startOriginX + dxWorld,
-				originY: moving.current.startOriginY + dyWorld,
-			});
-		};
-
-		const onUp = () => {
-			window.removeEventListener("mousemove", onMove);
-			window.removeEventListener("mouseup", onUp);
-			moving.current = null;
-		};
-
-		window.addEventListener("mousemove", onMove);
-		window.addEventListener("mouseup", onUp);
-	}
+	// overlay move helper removed; dragging now done via SVG handlers on the selection rect
 
 	function onSeatClick(seat: Seat, e: React.MouseEvent) {
 		e.stopPropagation();
@@ -333,8 +334,15 @@ export function SeatCanvas() {
 						stroke="#ddd"
 					/>
 
-					{/* row labels per section */}
+					{/* per-block rendering in rotated groups */}
 					{state.seatMap.blocks.map((b) => {
+						const hGap = b.hGap ?? H_GAP;
+						const vGap = b.vGap ?? V_GAP;
+						const bw = b.cols * SEAT_WIDTH + (b.cols - 1) * hGap;
+						const bh = b.rows * SEAT_HEIGHT + (b.rows - 1) * vGap;
+						const cx = b.originX + bw / 2;
+						const cy = b.originY + bh / 2;
+						// prepare row labels data
 						const labels: {
 							x: number;
 							y: number;
@@ -353,9 +361,9 @@ export function SeatCanvas() {
 									: String(rowIndex + 1);
 							const y =
 								b.originY +
-								r * (SEAT_HEIGHT + V_GAP) +
+								r * (SEAT_HEIGHT + vGap) +
 								SEAT_HEIGHT / 2;
-							const x = b.originX - Math.max(8, H_GAP) - 8; // left padding before first seat
+							const x = b.originX - Math.max(8, hGap) - 8;
 							labels.push({
 								x,
 								y,
@@ -365,15 +373,18 @@ export function SeatCanvas() {
 							});
 						}
 						return (
-							<g key={`rowlabels-${b.id}`}>
+							<g
+								key={`blk-${b.id}`}
+								transform={`rotate(${
+									b.rotation ?? 0
+								}, ${cx}, ${cy})`}
+							>
+								{/* row labels for this block */}
 								{labels.map((L) => {
 									const isSelected =
 										state.selectedRow?.blockId === b.id &&
 										state.selectedRow?.row === L.relRow;
-									if (isSelected) {
-										// Replace the label with an input overlay; hide this SVG text
-										return null;
-									}
+									if (isSelected) return null;
 									return (
 										<text
 											key={L.key}
@@ -385,11 +396,7 @@ export function SeatCanvas() {
 												11,
 												Math.floor(SEAT_HEIGHT * 0.5)
 											)}
-											fill={
-												isSelected
-													? "#1d4ed8" // blue-700
-													: "#6b7280"
-											}
+											fill={"#6b7280"}
 											className="cursor-pointer select-none"
 											onMouseDown={(ev) => {
 												ev.stopPropagation();
@@ -404,69 +411,130 @@ export function SeatCanvas() {
 										</text>
 									);
 								})}
+
+								{/* seats for this block */}
+								{state.seatMap.seats
+									.filter((s) => s.id.startsWith(`${b.id}::`))
+									.map((s) => (
+										<g
+											key={s.id}
+											onMouseDown={(e) =>
+												onSeatClick(s, e)
+											}
+										>
+											<SeatRect
+												seat={s}
+												selected={state.selectedSeatIds.includes(
+													s.id
+												)}
+											/>
+										</g>
+									))}
+
+								{/* selected overlay for this block */}
+								{state.selectedBlockId === b.id && (
+									<g>
+										<rect
+											x={b.originX - 4}
+											y={b.originY - 4}
+											width={bw + 8}
+											height={bh + 8}
+											fill="#3b82f6"
+											fillOpacity={0.06}
+											pointerEvents="none"
+										/>
+										<rect
+											x={b.originX - 6}
+											y={b.originY - 6}
+											width={bw + 12}
+											height={bh + 12}
+											fill="none"
+											stroke="#3b82f6"
+											strokeWidth={2}
+											strokeDasharray="6 4"
+											shapeRendering="crispEdges"
+											className="cursor-move"
+											onMouseDown={(ev) => {
+												ev.stopPropagation();
+												moving.current = {
+													blockId: b.id,
+													startX: ev.clientX,
+													startY: ev.clientY,
+													startOriginX: b.originX,
+													startOriginY: b.originY,
+												};
+											}}
+										/>
+										<rect
+											x={b.originX - 4}
+											y={b.originY - 4}
+											width={bw + 8}
+											height={bh + 8}
+											fill="transparent"
+											className="cursor-move"
+											onMouseDown={(ev) => {
+												ev.stopPropagation();
+												moving.current = {
+													blockId: b.id,
+													startX: ev.clientX,
+													startY: ev.clientY,
+													startOriginX: b.originX,
+													startOriginY: b.originY,
+												};
+											}}
+										/>
+										{/* rotation handle (blue dot) above the block */}
+										{(() => {
+											const handleY = b.originY - 28; // further above top edge for more separation
+											const handleX = b.originX + bw / 2; // centered horizontally
+											return (
+												<g
+													className="cursor-grab"
+													onMouseDown={(ev) => {
+														ev.stopPropagation();
+														// start rotation; compute initial angle from center to handle
+														const ang =
+															(Math.atan2(
+																handleY -
+																	(b.originY +
+																		bh / 2),
+																handleX -
+																	(b.originX +
+																		bw / 2)
+															) *
+																180) /
+															Math.PI;
+														rotating.current = {
+															blockId: b.id,
+															startAngle: ang,
+															startRotation:
+																b.rotation ?? 0,
+														};
+													}}
+												>
+													<line
+														x1={b.originX + bw / 2}
+														y1={b.originY - 6}
+														x2={handleX}
+														y2={handleY + 6}
+														stroke="#3b82f6"
+														strokeWidth={2}
+													/>
+													<circle
+														cx={handleX}
+														cy={handleY}
+														r={6}
+														fill="#3b82f6"
+														className="cursor-grab hover:cursor-grab"
+													/>
+												</g>
+											);
+										})()}
+									</g>
+								)}
 							</g>
 						);
 					})}
-
-					{/* seats */}
-					{state.seatMap.seats.map((s) => (
-						<g key={s.id} onMouseDown={(e) => onSeatClick(s, e)}>
-							<SeatRect
-								seat={s}
-								selected={state.selectedSeatIds.includes(s.id)}
-							/>
-						</g>
-					))}
-
-					{/* selected section overlay */}
-					{state.selectedBlockId &&
-						(() => {
-							const b = state.seatMap.blocks.find(
-								(x) => x.id === state.selectedBlockId
-							);
-							if (!b) return null;
-							const bw =
-								b.cols * SEAT_WIDTH + (b.cols - 1) * H_GAP;
-							const bh =
-								b.rows * SEAT_HEIGHT + (b.rows - 1) * V_GAP;
-							return (
-								<g key={`sel-${b.id}`}>
-									{/* subtle highlight */}
-									<rect
-										x={b.originX - 4}
-										y={b.originY - 4}
-										width={bw + 8}
-										height={bh + 8}
-										fill="#3b82f6"
-										fillOpacity={0.06}
-										pointerEvents="none"
-									/>
-									<rect
-										x={b.originX - 6}
-										y={b.originY - 6}
-										width={bw + 12}
-										height={bh + 12}
-										fill="none"
-										stroke="#3b82f6" /* blue-500 */
-										strokeWidth={2}
-										strokeDasharray="6 4"
-										shapeRendering="crispEdges"
-										className="cursor-move"
-										onMouseDown={(ev) => {
-											ev.stopPropagation();
-											// start moving the selected section
-											moving.current = {
-												blockId: b.id,
-												startX: ev.clientX,
-												startY: ev.clientY,
-												startOriginX: b.originX,
-												startOriginY: b.originY,
-											};
-										}}
-									/>
-								</g>
-							);
-						})()}
 				</g>
 			</svg>
 
@@ -485,6 +553,7 @@ export function SeatCanvas() {
 						(x) => x.id === sel.blockId
 					);
 					if (!b) return null;
+					if ((b.rotation ?? 0) !== 0) return null; // skip overlay when rotated
 					const rel = sel.row;
 					if (rel < 0 || rel >= b.rows) return null;
 					const rowIndex = b.startRowIndex + rel;
@@ -498,11 +567,13 @@ export function SeatCanvas() {
 						rowLabelDraft.key === key
 							? rowLabelDraft.value
 							: override ?? def;
+					const vGap = b.vGap ?? V_GAP;
+					const hGap = b.hGap ?? H_GAP;
 					const y =
 						b.originY +
-						rel * (SEAT_HEIGHT + V_GAP) +
+						rel * (SEAT_HEIGHT + vGap) +
 						SEAT_HEIGHT / 2;
-					const x = b.originX - Math.max(8, H_GAP) - 8; // same anchor as SVG label (textAnchor="end")
+					const x = b.originX - Math.max(8, hGap) - 8; // same anchor as SVG label (textAnchor="end")
 					const width = 40; // much narrower
 					const inputHeight = 20;
 					const left = offsetX + x * zoom - width; // right-align to label x
@@ -530,97 +601,7 @@ export function SeatCanvas() {
 					);
 				})()}
 
-			{/* Selected section toolbar (HTML overlay) */}
-			{state.selectedBlockId &&
-				bounds &&
-				(() => {
-					const b = state.seatMap.blocks.find(
-						(x) => x.id === state.selectedBlockId
-					);
-					if (!b) return null;
-					const bw = b.cols * SEAT_WIDTH + (b.cols - 1) * H_GAP;
-					const sx = offsetX + b.originX * zoom;
-					const sy = offsetY + b.originY * zoom;
-					const top = Math.max(8, sy - 36);
-					const left = Math.max(8, sx);
-					const width = Math.max(
-						140,
-						Math.min(bounds.width - left - 8, bw * zoom)
-					);
-					const label = b.name || "Untitled section";
-					return (
-						<div
-							className="absolute z-10 pointer-events-auto"
-							style={{ top, left, width }}
-						>
-							<div className="inline-flex items-center gap-2 rounded-md border border-blue-200 bg-white/95 shadow px-2 py-1">
-								{editingName ? (
-									<form
-										onSubmit={(e) => {
-											e.preventDefault();
-											const next = nameDraft.trim();
-											if (next) {
-												dispatch({
-													type: "UPDATE_BLOCK",
-													blockId: b.id,
-													patch: { name: next },
-												});
-											}
-											setEditingName(false);
-										}}
-									>
-										<input
-											autoFocus
-											className="border rounded px-2 py-0.5 text-sm"
-											value={nameDraft}
-											onChange={(e) =>
-												setNameDraft(e.target.value)
-											}
-											onBlur={() => setEditingName(false)}
-										/>
-									</form>
-								) : (
-									<span
-										className="text-sm text-blue-900 font-medium truncate cursor-move"
-										style={{ maxWidth: width - 90 }}
-										title="Drag to move section"
-										onMouseDown={(ev) =>
-											startOverlayMove(
-												ev,
-												b.id,
-												b.originX,
-												b.originY
-											)
-										}
-									>
-										{label}
-									</span>
-								)}
-								<div className="flex items-center gap-1">
-									<button
-										title="Editar nombre"
-										className="px-1.5 py-0.5 text-xs rounded border hover:bg-gray-50"
-										onClick={() => {
-											setNameDraft(label);
-											setEditingName(true);
-										}}
-									>
-										<LuPencil className="w-4 h-4" />
-									</button>
-									<button
-										title="Eliminar sección"
-										className="px-1.5 py-0.5 text-xs rounded border text-red-600 hover:bg-red-50"
-										onClick={() =>
-											setShowDeleteConfirm(true)
-										}
-									>
-										<LuTrash2 className="w-4 h-4" />
-									</button>
-								</div>
-							</div>
-						</div>
-					);
-				})()}
+			{/* NOTE: removed HTML overlay toolbar for selected section. Dragging is handled via the SVG selection rect below. */}
 
 			<AddBlockModal
 				open={showAddModal}

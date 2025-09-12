@@ -238,13 +238,15 @@ function alphaLabel(n: number) {
 
 function buildSeatsForBlock(block: SeatBlock): Seat[] {
 	const seats: Seat[] = [];
+	const hGap = block.hGap ?? H_GAP;
+	const vGap = block.vGap ?? V_GAP;
 	for (let r = 0; r < block.rows; r++) {
 		for (let c = 0; c < block.cols; c++) {
 			const rowIndex = block.startRowIndex + r;
 			const colIndex = block.startColIndex + c;
 			const id = `${block.id}::${rowIndex}-${colIndex}`;
-			const x = block.originX + c * (SEAT_WIDTH + H_GAP);
-			const y = block.originY + r * (SEAT_HEIGHT + V_GAP);
+			const x = block.originX + c * (SEAT_WIDTH + hGap);
+			const y = block.originY + r * (SEAT_HEIGHT + vGap);
 			const override = block.rowLabelOverrides?.[r];
 			const rowLabel =
 				override != null && override !== ""
@@ -346,6 +348,9 @@ export function SeatMapProvider({ children }: { children: React.ReactNode }) {
 				cols: preset.cols ?? 10,
 				originX: x,
 				originY: y,
+				rotation: preset.rotation ?? 0,
+				hGap: preset.hGap ?? H_GAP,
+				vGap: preset.vGap ?? V_GAP,
 				rowLabelStyle: preset.rowLabelStyle ?? "alpha",
 				seatLabelStyle: preset.seatLabelStyle ?? "numeric",
 				startRowIndex: preset.startRowIndex ?? 0,
