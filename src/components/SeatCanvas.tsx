@@ -2,7 +2,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useSeatMapStore } from "@/hooks/useSeatMapStore";
 import { usePanZoom } from "@/hooks/usePanZoom";
-import { AddBlockModal } from "@/components/AddBlockModal";
 import { ConfirmModal } from "@/components/ConfirmModal";
 // icons removed; section toolbar was converted to SVG-only interactions
 import type { Seat } from "@/types/seatmap";
@@ -87,11 +86,16 @@ export function SeatCanvas() {
 		if (state.activeTool.kind === "addBlock") return "cursor-copy";
 		return "cursor-default";
 	})();
-	const [pendingAddAt, setPendingAddAt] = useState<{
-		x: number;
-		y: number;
+	// drag-to-create addBlock interaction state
+	const creatingStart = useRef<{ x: number; y: number } | null>(null);
+	const [creationPreview, setCreationPreview] = useState<{
+		originX: number;
+		originY: number;
+		rows: number;
+		cols: number;
+		bw: number;
+		bh: number;
 	} | null>(null);
-	const [showAddModal, setShowAddModal] = useState(false);
 	// previously used for HTML overlay editing; removed when toolbar moved into SVG
 	const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
@@ -175,8 +179,15 @@ export function SeatCanvas() {
 
 		if (state.activeTool.kind === "addBlock") {
 			const { x, y } = screenToWorld(e.clientX, e.clientY, bounds);
-			setPendingAddAt({ x, y });
-			setShowAddModal(true);
+			creatingStart.current = { x, y };
+			setCreationPreview({
+				originX: x,
+				originY: y,
+				rows: 1,
+				cols: 1,
+				bw: SEAT_WIDTH,
+				bh: SEAT_HEIGHT,
+			});
 			return;
 		}
 
@@ -190,6 +201,39 @@ export function SeatCanvas() {
 			const dx = e.clientX - dragging.current.x;
 			const dy = e.clientY - dragging.current.y;
 			setOffset(dragging.current.ox + dx, dragging.current.oy + dy);
+		}
+		// update creation preview during drag
+		if (creatingStart.current && bounds) {
+			const start = creatingStart.current;
+			const { x: wx, y: wy } = screenToWorld(
+				e.clientX,
+				e.clientY,
+				bounds
+			);
+			const x0 = Math.min(start.x, wx);
+			const y0 = Math.min(start.y, wy);
+			const w = Math.max(0, Math.abs(wx - start.x));
+			const h = Math.max(0, Math.abs(wy - start.y));
+			const hGap = H_GAP;
+			const vGap = V_GAP;
+			const cols = Math.max(
+				1,
+				Math.floor((w + hGap) / (SEAT_WIDTH + hGap))
+			);
+			const rows = Math.max(
+				1,
+				Math.floor((h + vGap) / (SEAT_HEIGHT + vGap))
+			);
+			const bw = cols * SEAT_WIDTH + (cols - 1) * hGap;
+			const bh = rows * SEAT_HEIGHT + (rows - 1) * vGap;
+			setCreationPreview({
+				originX: x0,
+				originY: y0,
+				rows,
+				cols,
+				bw,
+				bh,
+			});
 		}
 		// rotating selected section via handle
 		if (rotating.current && bounds) {
@@ -242,6 +286,24 @@ export function SeatCanvas() {
 		dragging.current = null;
 		moving.current = null;
 		rotating.current = null;
+		// finalize block creation
+		if (creatingStart.current && creationPreview) {
+			const preset =
+				state.activeTool.kind === "addBlock"
+					? state.activeTool.preset
+					: undefined;
+			addBlockAt(creationPreview.originX, creationPreview.originY, {
+				rows: creationPreview.rows,
+				cols: creationPreview.cols,
+				rowLabelStyle: preset?.rowLabelStyle ?? "alpha",
+				seatLabelStyle: preset?.seatLabelStyle ?? "numeric",
+				startRowIndex: preset?.startRowIndex ?? 0,
+				startColIndex: preset?.startColIndex ?? 0,
+				rotation: 0,
+			});
+			creatingStart.current = null;
+			setCreationPreview(null);
+		}
 	}
 
 	function onSvgWheel(e: React.WheelEvent) {
@@ -278,6 +340,7 @@ export function SeatCanvas() {
 
 	function onSeatClick(seat: Seat, e: React.MouseEvent) {
 		e.stopPropagation();
+		if (state.activeTool.kind === "addBlock") return; // ignore seat clicks while creating
 		const set = new Set(state.selectedSeatIds);
 		if (e.shiftKey || e.metaKey) {
 			if (set.has(seat.id)) set.delete(seat.id);
@@ -535,6 +598,123 @@ export function SeatCanvas() {
 							</g>
 						);
 					})}
+
+					{/* creation preview overlay */}
+					{creationPreview && (
+						<g pointerEvents="none">
+							<rect
+								x={creationPreview.originX - 4}
+								y={creationPreview.originY - 4}
+								width={creationPreview.bw + 8}
+								height={creationPreview.bh + 8}
+								fill="#3b82f6"
+								fillOpacity={0.08}
+							/>
+							<rect
+								x={creationPreview.originX - 6}
+								y={creationPreview.originY - 6}
+								width={creationPreview.bw + 12}
+								height={creationPreview.bh + 12}
+								fill="none"
+								stroke="#3b82f6"
+								strokeWidth={2}
+								strokeDasharray="6 4"
+								shapeRendering="crispEdges"
+							/>
+
+							{/* seat previews */}
+							{(() => {
+								const preset =
+									state.activeTool.kind === "addBlock"
+										? state.activeTool.preset
+										: {
+												rowLabelStyle: "alpha" as const,
+												seatLabelStyle:
+													"numeric" as const,
+												startRowIndex: 0,
+												startColIndex: 0,
+										  };
+								const hGap = H_GAP;
+								const vGap = V_GAP;
+								const nodes = [] as React.ReactNode[];
+								for (let r = 0; r < creationPreview.rows; r++) {
+									for (
+										let c = 0;
+										c < creationPreview.cols;
+										c++
+									) {
+										const x =
+											creationPreview.originX +
+											c * (SEAT_WIDTH + hGap);
+										const y =
+											creationPreview.originY +
+											r * (SEAT_HEIGHT + vGap);
+										const rowIndex =
+											preset.startRowIndex + r;
+										const colIndex =
+											preset.startColIndex + c;
+										const rowLabel =
+											preset.rowLabelStyle === "alpha"
+												? alphaLabel(rowIndex)
+												: String(rowIndex + 1);
+										const colLabel =
+											(preset.seatLabelStyle ??
+												"numeric") === "alpha"
+												? alphaLabel(colIndex)
+												: String(colIndex + 1);
+										const label = `${rowLabel}${colLabel}`;
+										nodes.push(
+											<g key={`prev-${r}-${c}`}>
+												<rect
+													x={x}
+													y={y}
+													width={SEAT_WIDTH}
+													height={SEAT_HEIGHT}
+													rx={4}
+													ry={4}
+													className="stroke-gray-400 fill-white"
+													opacity={0.9}
+												/>
+												<text
+													x={x + SEAT_WIDTH / 2}
+													y={y + SEAT_HEIGHT / 2}
+													textAnchor="middle"
+													alignmentBaseline="middle"
+													fontSize={Math.max(
+														10,
+														Math.floor(
+															SEAT_HEIGHT * 0.45
+														)
+													)}
+													fill="#374151"
+												>
+													{label}
+												</text>
+											</g>
+										);
+									}
+								}
+								return nodes;
+							})()}
+
+							<text
+								x={
+									creationPreview.originX +
+									creationPreview.bw / 2
+								}
+								y={
+									creationPreview.originY +
+									creationPreview.bh / 2
+								}
+								textAnchor="middle"
+								alignmentBaseline="middle"
+								fontSize={14}
+								fill="#1e3a8a"
+							>
+								{creationPreview.rows}x{creationPreview.cols}
+							</text>
+						</g>
+					)}
 				</g>
 			</svg>
 
@@ -602,25 +782,6 @@ export function SeatCanvas() {
 				})()}
 
 			{/* NOTE: removed HTML overlay toolbar for selected section. Dragging is handled via the SVG selection rect below. */}
-
-			<AddBlockModal
-				open={showAddModal}
-				onClose={() => setShowAddModal(false)}
-				onConfirm={(cfg) => {
-					setShowAddModal(false);
-					if (pendingAddAt) {
-						const basePreset =
-							state.activeTool.kind === "addBlock"
-								? state.activeTool.preset
-								: {};
-						addBlockAt(pendingAddAt.x, pendingAddAt.y, {
-							...basePreset,
-							...cfg,
-						});
-						setPendingAddAt(null);
-					}
-				}}
-			/>
 
 			{/* Delete confirmation */}
 			{state.selectedBlockId && (

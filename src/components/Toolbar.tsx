@@ -18,7 +18,7 @@ export function Toolbar() {
 						? "bg-gray-900 text-white border-blue-900"
 						: "bg-white border-gray-300"
 				}`}
-				title="Crear sección"
+				title="Crear asientos"
 				onClick={() =>
 					setTool({
 						kind: "addBlock",
@@ -35,7 +35,7 @@ export function Toolbar() {
 				}
 			>
 				<LuSquarePlus className="w-4 h-4" />
-				<span className="text-sm">Crear sección</span>
+				<span className="text-sm">Crear asientos</span>
 			</button>
 
 			<button
