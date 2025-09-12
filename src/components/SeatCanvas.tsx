@@ -129,6 +129,21 @@ export function SeatCanvas() {
 				spaceDown.current = true;
 				setSpaceHeld(true);
 			}
+			// delete selected section with Delete/Backspace (if not typing)
+			if (
+				state.selectedBlockId &&
+				(e.key === "Delete" || e.key === "Backspace")
+			) {
+				const target = e.target as HTMLElement | null;
+				const tag = target?.tagName || "";
+				const isEditable =
+					/^(INPUT|TEXTAREA)$/.test(tag) ||
+					Boolean((target as HTMLElement)?.isContentEditable);
+				if (!isEditable) {
+					e.preventDefault();
+					setShowDeleteConfirm(true);
+				}
+			}
 			if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "z") {
 				e.preventDefault();
 				if (e.shiftKey) dispatch({ type: "REDO" });
@@ -158,7 +173,7 @@ export function SeatCanvas() {
 			window.removeEventListener("keydown", onKeyDown);
 			window.removeEventListener("keyup", onKeyUp);
 		};
-	}, [dispatch, zoom]);
+	}, [dispatch, zoom, state.selectedBlockId]);
 
 	const worldTransform = useMemo(
 		() => `translate(${offsetX}, ${offsetY}) scale(${zoom})`,
