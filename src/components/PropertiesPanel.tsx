@@ -16,6 +16,14 @@ export function PropertiesPanel() {
 		key?: string;
 		value: string;
 	}>({ key: undefined, value: "" });
+	const [rowCountDraft, setRowCountDraft] = useState<{
+		key?: string;
+		value: string;
+	}>({ key: undefined, value: "" });
+	const [colCountDraft, setColCountDraft] = useState<{
+		key?: string;
+		value: string;
+	}>({ key: undefined, value: "" });
 	const selected = state.selectedSeatIds[0]
 		? state.seatMap.seats.find((s) => s.id === state.selectedSeatIds[0])
 		: undefined;
@@ -114,6 +122,8 @@ export function PropertiesPanel() {
 		if (!selectedBlock) {
 			setRowStartDraft({ key: undefined, value: "" });
 			setColStartDraft({ key: undefined, value: "" });
+			setRowCountDraft({ key: undefined, value: "" });
+			setColCountDraft({ key: undefined, value: "" });
 			return;
 		}
 		const rowKey = `row-start:${selectedBlock.id}:${selectedBlock.rowLabelStyle}`;
@@ -125,6 +135,14 @@ export function PropertiesPanel() {
 		);
 		setColStartDraft((prev) =>
 			prev.key === colKey ? prev : { key: undefined, value: "" }
+		);
+		const rowsKey = `rows:${selectedBlock.id}`;
+		const colsKey = `cols:${selectedBlock.id}`;
+		setRowCountDraft((prev) =>
+			prev.key === rowsKey ? prev : { key: undefined, value: "" }
+		);
+		setColCountDraft((prev) =>
+			prev.key === colsKey ? prev : { key: undefined, value: "" }
 		);
 	}, [selectedBlock]);
 
@@ -175,23 +193,59 @@ export function PropertiesPanel() {
 						<label>Filas</label>
 						<input
 							type="number"
+							min={1}
+							step={1}
+							placeholder="1"
 							className="border rounded px-2 py-1"
-							value={selectedBlock.rows}
-							onChange={(e) =>
-								rebuildBlockSeats(selectedBlock.id, {
-									rows: Number(e.target.value),
-								})
+							value={(() => {
+								const key = `rows:${selectedBlock.id}`;
+								return rowCountDraft.key === key
+									? rowCountDraft.value
+									: String(selectedBlock.rows);
+							})()}
+							onChange={(e) => {
+								const key = `rows:${selectedBlock.id}`;
+								const v = e.target.value;
+								setRowCountDraft({ key, value: v });
+								if (v === "") return; // allow temporary empty input
+								const n = Math.max(1, Number(v));
+								if (!Number.isNaN(n)) {
+									rebuildBlockSeats(selectedBlock.id, {
+										rows: n,
+									});
+								}
+							}}
+							onBlur={() =>
+								setRowCountDraft({ key: undefined, value: "" })
 							}
 						/>
 						<label>Columnas</label>
 						<input
 							type="number"
+							min={1}
+							step={1}
+							placeholder="1"
 							className="border rounded px-2 py-1"
-							value={selectedBlock.cols}
-							onChange={(e) =>
-								rebuildBlockSeats(selectedBlock.id, {
-									cols: Number(e.target.value),
-								})
+							value={(() => {
+								const key = `cols:${selectedBlock.id}`;
+								return colCountDraft.key === key
+									? colCountDraft.value
+									: String(selectedBlock.cols);
+							})()}
+							onChange={(e) => {
+								const key = `cols:${selectedBlock.id}`;
+								const v = e.target.value;
+								setColCountDraft({ key, value: v });
+								if (v === "") return; // allow temporary empty input
+								const n = Math.max(1, Number(v));
+								if (!Number.isNaN(n)) {
+									rebuildBlockSeats(selectedBlock.id, {
+										cols: n,
+									});
+								}
+							}}
+							onBlur={() =>
+								setColCountDraft({ key: undefined, value: "" })
 							}
 						/>
 						<label>Rotación</label>
