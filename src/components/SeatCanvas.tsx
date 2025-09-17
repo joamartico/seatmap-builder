@@ -33,6 +33,7 @@ function SeatRect({ seat, selected }: { seat: Seat; selected: boolean }) {
 				fontSize={fontSize}
 				fill={textColor}
 				pointerEvents="none"
+				className="select-none"
 			>
 				{seat.label}
 			</text>
@@ -377,7 +378,8 @@ export function SeatCanvas() {
 		>
 			<svg
 				ref={svgRef}
-				className={`w-full h-full cursor-[inherit] ${canvasCursor}`}
+				className={`w-full h-full cursor-[inherit] select-none ${canvasCursor}`}
+				style={{ userSelect: "none", WebkitUserSelect: "none" }}
 				onMouseDown={onMouseDown}
 				onMouseMove={onMouseMove}
 				onMouseUp={onMouseUp}
@@ -702,6 +704,7 @@ export function SeatCanvas() {
 														)
 													)}
 													fill="#374151"
+													className="select-none"
 												>
 													{label}
 												</text>
