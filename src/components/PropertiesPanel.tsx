@@ -66,7 +66,7 @@ export function PropertiesPanel() {
 			return null;
 		} else {
 			const asNum = Number(trimmed);
-			if (!Number.isNaN(asNum)) return Math.max(0, Math.floor(asNum - 1));
+			if (!Number.isNaN(asNum)) return Math.max(0, Math.floor(asNum));
 			const asAlpha = alphaToIndex(trimmed);
 			if (asAlpha != null) return Math.max(0, asAlpha);
 			return null;
@@ -84,7 +84,7 @@ export function PropertiesPanel() {
 			const def =
 				b.rowLabelStyle === "alpha"
 					? alphaLabel(rowIndex)
-					: String(rowIndex + 1);
+					: String(rowIndex);
 			const cur = b.rowLabelOverrides?.[rel] ?? def;
 			return { block: b, relRow: rel, defaultLabel: def, current: cur };
 		}
@@ -98,7 +98,7 @@ export function PropertiesPanel() {
 			const def =
 				b.rowLabelStyle === "alpha"
 					? alphaLabel(rowIndex)
-					: String(rowIndex + 1);
+					: String(rowIndex);
 			const cur = b.rowLabelOverrides?.[rel] ?? def;
 			return { block: b, relRow: rel, defaultLabel: def, current: cur };
 		}
@@ -311,7 +311,17 @@ export function PropertiesPanel() {
 							placeholder={
 								selectedBlock.rowLabelStyle === "alpha"
 									? "A"
-									: "1"
+									: "0"
+							}
+							inputMode={
+								selectedBlock.rowLabelStyle === "alpha"
+									? "text"
+									: "numeric"
+							}
+							pattern={
+								selectedBlock.rowLabelStyle === "alpha"
+									? "[A-Za-z]*"
+									: "[0-9]*"
 							}
 							value={(() => {
 								const key = `row-start:${selectedBlock.id}:${selectedBlock.rowLabelStyle}`;
@@ -319,16 +329,25 @@ export function PropertiesPanel() {
 									? rowStartDraft.value
 									: selectedBlock.rowLabelStyle === "alpha"
 									? alphaLabel(selectedBlock.startRowIndex)
-									: String(selectedBlock.startRowIndex + 1);
+									: String(selectedBlock.startRowIndex);
 							})()}
 							onChange={(e) => {
 								const key = `row-start:${selectedBlock.id}:${selectedBlock.rowLabelStyle}`;
-								const next = e.target.value;
-								setRowStartDraft({ key, value: next });
-								const idx = parseStart(
-									selectedBlock.rowLabelStyle,
-									next
-								);
+								const raw = e.target.value;
+								const filtered =
+									selectedBlock.rowLabelStyle === "alpha"
+										? raw
+												.replace(/[^A-Za-z]/g, "")
+												.toUpperCase()
+										: raw.replace(/[^0-9]/g, "");
+								setRowStartDraft({ key, value: filtered });
+								const idx =
+									filtered === ""
+										? null
+										: parseStart(
+												selectedBlock.rowLabelStyle,
+												filtered
+										  );
 								if (idx != null)
 									rebuildBlockSeats(selectedBlock.id, {
 										startRowIndex: idx,
@@ -361,7 +380,19 @@ export function PropertiesPanel() {
 								(selectedBlock.seatLabelStyle ?? "numeric") ===
 								"alpha"
 									? "A"
-									: "1"
+									: "0"
+							}
+							inputMode={
+								(selectedBlock.seatLabelStyle ?? "numeric") ===
+								"alpha"
+									? "text"
+									: "numeric"
+							}
+							pattern={
+								(selectedBlock.seatLabelStyle ?? "numeric") ===
+								"alpha"
+									? "[A-Za-z]*"
+									: "[0-9]*"
 							}
 							value={(() => {
 								const style = (selectedBlock.seatLabelStyle ??
@@ -371,15 +402,24 @@ export function PropertiesPanel() {
 									? colStartDraft.value
 									: style === "alpha"
 									? alphaLabel(selectedBlock.startColIndex)
-									: String(selectedBlock.startColIndex + 1);
+									: String(selectedBlock.startColIndex);
 							})()}
 							onChange={(e) => {
 								const style = (selectedBlock.seatLabelStyle ??
 									"numeric") as "alpha" | "numeric";
 								const key = `col-start:${selectedBlock.id}:${style}`;
-								const next = e.target.value;
-								setColStartDraft({ key, value: next });
-								const idx = parseStart(style, next);
+								const raw = e.target.value;
+								const filtered =
+									style === "alpha"
+										? raw
+												.replace(/[^A-Za-z]/g, "")
+												.toUpperCase()
+										: raw.replace(/[^0-9]/g, "");
+								setColStartDraft({ key, value: filtered });
+								const idx =
+									filtered === ""
+										? null
+										: parseStart(style, filtered);
 								if (idx != null)
 									rebuildBlockSeats(selectedBlock.id, {
 										startColIndex: idx,

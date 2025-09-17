@@ -178,11 +178,11 @@ function reducer(state: SeatMapState, action: Action): SeatMapState {
 							? rowOverride
 							: updatedBlock.rowLabelStyle === "alpha"
 							? alphaLabel(s.row)
-							: String(s.row + 1);
+							: String(s.row);
 					const colLabel =
 						updatedBlock.seatLabelStyle === "alpha"
 							? alphaLabel(s.col)
-							: String(s.col + 1);
+							: String(s.col);
 					return { ...s, label: `${rowLabel}${colLabel}` };
 				}),
 				updatedAt: now(),
@@ -253,11 +253,11 @@ function buildSeatsForBlock(block: SeatBlock): Seat[] {
 					? override
 					: block.rowLabelStyle === "alpha"
 					? alphaLabel(rowIndex)
-					: String(rowIndex + 1);
+					: String(rowIndex);
 			const colLabel =
 				block.seatLabelStyle === "alpha"
 					? alphaLabel(colIndex)
-					: String(colIndex + 1);
+					: String(colIndex);
 			const label = `${rowLabel}${colLabel}`;
 			seats.push({
 				id,

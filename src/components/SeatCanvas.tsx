@@ -343,7 +343,7 @@ export function SeatCanvas() {
 		const def =
 			b.rowLabelStyle === "alpha"
 				? alphaLabel(rowIndex)
-				: String(rowIndex + 1);
+				: String(rowIndex);
 		const current = override ?? def;
 		const key = `${b.id}:${rel}`;
 		setRowLabelDraft((prev) =>
@@ -438,7 +438,7 @@ export function SeatCanvas() {
 									? override
 									: b.rowLabelStyle === "alpha"
 									? alphaLabel(rowIndex)
-									: String(rowIndex + 1);
+									: String(rowIndex);
 							const y =
 								b.originY +
 								r * (SEAT_HEIGHT + vGap) +
@@ -664,12 +664,12 @@ export function SeatCanvas() {
 										const rowLabel =
 											preset.rowLabelStyle === "alpha"
 												? alphaLabel(rowIndex)
-												: String(rowIndex + 1);
+												: String(rowIndex);
 										const colLabel =
 											(preset.seatLabelStyle ??
 												"numeric") === "alpha"
 												? alphaLabel(colIndex)
-												: String(colIndex + 1);
+												: String(colIndex);
 										const label = `${rowLabel}${colLabel}`;
 										nodes.push(
 											<g key={`prev-${r}-${c}`}>
