@@ -534,6 +534,7 @@ export function SeatCanvas() {
 											strokeDasharray="6 4"
 											shapeRendering="crispEdges"
 											className="cursor-move"
+											pointerEvents="stroke"
 											onMouseDown={(ev) => {
 												ev.stopPropagation();
 												moving.current = {
@@ -551,17 +552,7 @@ export function SeatCanvas() {
 											width={bw + 8}
 											height={bh + 8}
 											fill="transparent"
-											className="cursor-move"
-											onMouseDown={(ev) => {
-												ev.stopPropagation();
-												moving.current = {
-													blockId: b.id,
-													startX: ev.clientX,
-													startY: ev.clientY,
-													startOriginX: b.originX,
-													startOriginY: b.originY,
-												};
-											}}
+											pointerEvents="none"
 										/>
 										{/* rotation handle (blue dot) above the block */}
 										{(() => {
