@@ -194,6 +194,7 @@ export function PropertiesPanel() {
 						<input
 							type="number"
 							min={1}
+							max={100}
 							step={1}
 							placeholder="1"
 							className="border rounded px-2 py-1"
@@ -208,7 +209,7 @@ export function PropertiesPanel() {
 								const v = e.target.value;
 								setRowCountDraft({ key, value: v });
 								if (v === "") return; // allow temporary empty input
-								const n = Math.max(1, Number(v));
+								const n = Math.max(1, Math.min(100, Number(v)));
 								if (!Number.isNaN(n)) {
 									rebuildBlockSeats(selectedBlock.id, {
 										rows: n,
@@ -223,6 +224,7 @@ export function PropertiesPanel() {
 						<input
 							type="number"
 							min={1}
+							max={100}
 							step={1}
 							placeholder="1"
 							className="border rounded px-2 py-1"
@@ -237,7 +239,7 @@ export function PropertiesPanel() {
 								const v = e.target.value;
 								setColCountDraft({ key, value: v });
 								if (v === "") return; // allow temporary empty input
-								const n = Math.max(1, Number(v));
+								const n = Math.max(1, Math.min(100, Number(v)));
 								if (!Number.isNaN(n)) {
 									rebuildBlockSeats(selectedBlock.id, {
 										cols: n,
